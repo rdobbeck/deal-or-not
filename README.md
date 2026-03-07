@@ -6,11 +6,11 @@ Convergence: A Chainlink Hackathon (Feb 6 - Mar 8, 2026). Built by Ryan & Tippi 
 
 ## The Vision
 
-Deal or NOT is not just a dApp. It is a live on-chain game show format.
+Deal or NOT is a live on-chain game show format. A revolutionary convergence of technology and stupid fun.
 
-The format: host a Discord livestream, run a lottery round where audience buys in via CCIP from any chain, select a contestant, play the game live with the AI Banker trash-talking in real time, audience watches cases open on the watch page. Sponsors buy per-round placement. Seasons with leaderboards, grand finales with accumulated jackpots.
+Before Chainlink, this was impossible. Case values on a public blockchain are readable by anyone. An AI banker hosted off-chain can be spoofed. Cross-chain entry requires trusted bridges. Chainlink solves all of it: CRE keeps case values private, VRF keeps them fair, Price Feeds price the entry in dollars, Gemini via CRE Confidential HTTP gives the Banker a personality no one can tamper with, and CCIP lets players join from any chain.
 
-This is why CCIP is core, not a stretch goal. Every spoke chain is a distribution channel and a potential sponsor.
+The format: host a Discord livestream, run a lottery round where audience buys in from any chain, select a contestant, play the game live with the AI Banker trash-talking in real time, audience watches cases open on the watch page. Sponsors buy per-round placement. Seasons with leaderboards, grand finales with accumulated jackpots.
 
 ## The Security Problem We Solved
 
@@ -199,7 +199,7 @@ deal-or-not/
 +-- deal/                        # ETHDenver legacy (Brodinger's Case)
 ```
 
-The `packages/convergence/` package is the production version. It splits the prototype monolith into focused, testable contracts. The `prototype/` package proved the concept. The `prototype/frontend/` is shared and points to convergence contract addresses.
+The [`packages/convergence/`](packages/convergence/README.md) package is the production version. It splits the prototype monolith into focused, testable contracts. The `prototype/` package proved the concept. The `prototype/frontend/` is shared and points to convergence contract addresses.
 
 ## Origin: ETHDenver 2026
 
