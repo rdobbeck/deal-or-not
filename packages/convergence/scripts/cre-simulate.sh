@@ -69,11 +69,15 @@ run_banker() {
 
   cd "$WORKFLOWS"
 
-  # Inject Gemini API key for simulate mode
-  local config="banker-ai/config.staging.json"
-  local backup=""
+  # Inject Gemini API key for simulate mode (restore on exit)
+  local config="$WORKFLOWS/banker-ai/config.staging.json"
   if [[ -n "$GEMINI_API_KEY_ALL" ]]; then
+    local backup
     backup=$(cat "$config")
+    # shellcheck disable=SC2064
+    trap "cat <<'RESTORE' > '$config'
+$backup
+RESTORE" EXIT
     python3 -c "
 import json
 with open('$config') as f:
@@ -82,7 +86,6 @@ c['geminiApiKey'] = '${GEMINI_API_KEY_ALL}'
 with open('$config', 'w') as f:
     json.dump(c, f, indent=2)
 "
-    trap 'echo "$backup" > "$config"' EXIT
     echo "  Gemini API key injected"
   else
     echo "  WARNING: No GEMINI_API_KEY_ALL — AI Banker will use fallback message"

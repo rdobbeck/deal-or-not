@@ -27,14 +27,14 @@ shift
 case "$CMD" in
   create)
     echo "Estimating entry fee..."
-    FEE=$(cast call "$GAME_CONTRACT" "estimateEntryFee()(uint256,uint256)" --rpc-url "$RPC_URL" | tail -1)
+    FEE=$(cast call "$GAME_CONTRACT" "estimateEntryFee()(uint256,uint256)" --rpc-url "$RPC_URL" | tail -1 | awk '{print $1}')
     echo "Entry fee (with slippage): $FEE wei"
     echo ""
     echo "Creating new QuickPlay game with \$0.25 entry..."
     cast send "$GAME_CONTRACT" "createGame()" \
       --value "$FEE" \
       --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL"
-    NEXT=$(cast call "$GAME_CONTRACT" "nextGameId()(uint256)" --rpc-url "$RPC_URL")
+    NEXT=$(cast call "$GAME_CONTRACT" "nextGameId()(uint256)" --rpc-url "$RPC_URL" | awk '{print $1}')
     echo ""
     echo "Game created! Your game ID: $((NEXT - 1))"
     echo "Entry fee forwarded to Bank."
@@ -53,8 +53,9 @@ case "$CMD" in
     GAME_ID="${1:?Usage: play-game.sh open <GAME_ID> <CASE_INDEX>}"
     CASE="${2:?Usage: play-game.sh open <GAME_ID> <CASE_INDEX>}"
     echo "Opening case #$CASE for game $GAME_ID..."
-    TX=$(cast send "$GAME_CONTRACT" "openCase(uint256,uint8)" "$GAME_ID" "$CASE" \
-      --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --json | python3 -c "import json,sys;print(json.load(sys.stdin)['transactionHash'])")
+    RESULT=$(cast send "$GAME_CONTRACT" "openCase(uint256,uint8)" "$GAME_ID" "$CASE" \
+      --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --json 2>&1) || { echo "Error: $RESULT"; exit 1; }
+    TX=$(echo "$RESULT" | python3 -c "import json,sys;print(json.load(sys.stdin)['transactionHash'])")
     echo "TX: $TX"
     echo "CRE will reveal the value. Run: ./scripts/cre-simulate.sh reveal $TX"
     ;;
