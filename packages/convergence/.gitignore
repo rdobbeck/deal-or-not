@@ -12,3 +12,12 @@ docs/
 
 # Dotenv file
 .env
+
+# CRE CLI build artifacts
+.cre_build_tmp.js
+bun.lock
+node_modules/
+package-lock.json
+
+# Generated at runtime by cre-simulate.sh
+config.staging.json

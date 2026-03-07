@@ -1,6 +1,0 @@
-{
-  "contractAddress": "0x46B6b547A4683ac5533CAce6aDc4d399b50424A7",
-  "sponsorJackpotAddress": "0x14a26cb376d8e36c47261A46d6b203A7BaADaE53",
-  "chainSelectorName": "ethereum-testnet-sepolia-base-1",
-  "gasLimit": "300000"
-}

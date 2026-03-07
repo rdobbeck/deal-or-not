@@ -16,6 +16,52 @@ WORKFLOWS="$PROJECT_DIR/workflows"
 CMD="${1:?Usage: cre-simulate.sh <reveal|banker|savequote|support> [args...]}"
 shift
 
+# ── Generate CRE workflow configs from env vars (never committed) ──
+
+generate_configs() {
+  python3 -c "
+import json, os
+G = os.environ['GAME_CONTRACT']
+C = 'ethereum-testnet-sepolia-base-1'
+
+configs = {
+    'confidential-reveal/config.staging.json': {
+        'contractAddress': G, 'chainSelectorName': C, 'gasLimit': '300000',
+    },
+    'banker-ai/config.staging.json': {
+        'contractAddress': G, 'chainSelectorName': C, 'gasLimit': '500000',
+        'geminiModel': 'gemini-2.5-flash',
+        **(({'geminiApiKey': os.environ['GEMINI_API_KEY_ALL']}) if os.environ.get('GEMINI_API_KEY_ALL') else {}),
+    },
+    'save-quote/config.staging.json': {
+        'contractAddress': G,
+        'bestOfBankerAddress': os.environ['BEST_OF_BANKER'],
+        'chainSelectorName': C, 'gasLimit': '300000',
+    },
+    'sponsor-jackpot/config.staging.json': {
+        'contractAddress': G,
+        'sponsorJackpotAddress': os.environ['SPONSOR_VAULT'],
+        'chainSelectorName': C, 'gasLimit': '300000',
+    },
+}
+
+for path, data in configs.items():
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=2)
+"
+}
+
+cleanup_configs() {
+  rm -f "$WORKFLOWS/confidential-reveal/config.staging.json" \
+       "$WORKFLOWS/banker-ai/config.staging.json" \
+       "$WORKFLOWS/save-quote/config.staging.json" \
+       "$WORKFLOWS/sponsor-jackpot/config.staging.json"
+}
+
+cd "$WORKFLOWS"
+generate_configs
+trap cleanup_configs EXIT
+
 # ── Helpers ──
 
 get_phase() {
@@ -69,27 +115,7 @@ run_banker() {
 
   cd "$WORKFLOWS"
 
-  # Inject Gemini API key for simulate mode (restore on exit)
-  local config="$WORKFLOWS/banker-ai/config.staging.json"
-  if [[ -n "$GEMINI_API_KEY_ALL" ]]; then
-    local backup
-    backup=$(cat "$config")
-    # shellcheck disable=SC2064
-    trap "cat <<'RESTORE' > '$config'
-$backup
-RESTORE" EXIT
-    python3 -c "
-import json
-with open('$config') as f:
-    c = json.load(f)
-c['geminiApiKey'] = '${GEMINI_API_KEY_ALL}'
-with open('$config', 'w') as f:
-    json.dump(c, f, indent=2)
-"
-    echo "  Gemini API key injected"
-  else
-    echo "  WARNING: No GEMINI_API_KEY_ALL — AI Banker will use fallback message"
-  fi
+  [[ -n "$GEMINI_API_KEY_ALL" ]] && echo "  Gemini API key included" || echo "  WARNING: No GEMINI_API_KEY_ALL — AI Banker will use fallback message"
 
   cre workflow simulate ./banker-ai \
     --evm-tx-hash "$tx" \
