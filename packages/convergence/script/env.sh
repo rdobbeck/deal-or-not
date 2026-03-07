@@ -37,6 +37,7 @@ fi
 # Event topics (precomputed keccak256)
 export TOPIC_CASE_OPEN="0xab3b62f6fd63e2b9a116e4f83e0a16b1e4df0ddf7a348ac2407e400fa73a29d8"
 export TOPIC_ROUND_COMPLETE="0xc9cd1e1a7382c02c47d1955e4ac06db27ff51188b5a155faaafa0088150086a6"
+export TOPIC_BANKER_MESSAGE="0xddc71f496db9ca8c3743866e843ec6c49194782533ce32135c8107cf53ff6f70"
 
 # Phase names
 PHASE_NAMES=("WaitingForVRF" "Created" "Round" "WaitingForCRE" "AwaitingOffer" "BankerOffer" "FinalRound" "WaitingFinalCRE" "GameOver")

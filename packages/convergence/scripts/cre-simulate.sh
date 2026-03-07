@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 # CRE Simulate — single script for all CRE workflows
-# Usage: ./scripts/cre-simulate.sh <reveal|banker|support> [args...]
+# Usage: ./scripts/cre-simulate.sh <reveal|banker|savequote|support> [args...]
 #
 # Commands:
-#   reveal <TX_HASH> [EVENT_INDEX]  Reveal case value (CaseOpenRequested)
-#   banker <TX_HASH> [EVENT_INDEX]  AI Banker offer (RoundComplete)
-#   support <GAME_ID> [POLL]        Auto-watch game and trigger workflows
+#   reveal    <TX_HASH> [EVENT_INDEX]  Reveal case value (CaseOpenRequested)
+#   banker    <TX_HASH> [EVENT_INDEX]  AI Banker offer (RoundComplete)
+#   savequote <TX_HASH> [EVENT_INDEX]  Save banker quote to BestOfBanker (BankerMessage)
+#   support   <GAME_ID> [POLL]         Auto-watch game and trigger workflows
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../script/env.sh"
 
 WORKFLOWS="$PROJECT_DIR/workflows"
 
-CMD="${1:?Usage: cre-simulate.sh <reveal|banker|support> [args...]}"
+CMD="${1:?Usage: cre-simulate.sh <reveal|banker|savequote|support> [args...]}"
 shift
 
 # ── Helpers ──
@@ -108,6 +109,21 @@ run_jackpot() {
     --trigger-index 0 2>&1 || echo "(jackpot skipped — non-critical)"
 }
 
+run_save_quote() {
+  local tx="$1" event_idx="${2:-0}"
+  echo "Running CRE save-quote..."
+  echo "  TX:    $tx"
+  echo "  Event: log index $event_idx (BankerMessage)"
+  cd "$WORKFLOWS"
+  cre workflow simulate ./save-quote \
+    --evm-tx-hash "$tx" \
+    --evm-event-index "$event_idx" \
+    -T staging-settings \
+    --broadcast \
+    --non-interactive \
+    --trigger-index 0 2>&1 || echo "(save-quote skipped — non-critical)"
+}
+
 # ── Commands ──
 
 case "$CMD" in
@@ -121,6 +137,12 @@ case "$CMD" in
     TX_HASH="${1:?Usage: cre-simulate.sh banker <TX_HASH> [EVENT_INDEX]}"
     EVENT_INDEX="${2:-1}"
     run_banker "$TX_HASH" "$EVENT_INDEX"
+    ;;
+
+  savequote)
+    TX_HASH="${1:?Usage: cre-simulate.sh savequote <TX_HASH> [EVENT_INDEX]}"
+    EVENT_INDEX="${2:-0}"
+    run_save_quote "$TX_HASH" "$EVENT_INDEX"
     ;;
 
   support)
@@ -192,7 +214,21 @@ case "$CMD" in
                 --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" 2>&1 | sed 's/^/  | /'
             fi
             ;;
-          5) echo "  Banker offer is in! Deal or NOT?" ;;
+          5)
+            echo "  Banker offer is in! Saving quote to BestOfBanker..."
+            echo "  Searching blocks $SEARCH_FROM -> $SEARCH_TO..."
+
+            BANKER_MSG_TX=$(find_event_in_range "$TOPIC_BANKER_MESSAGE" "$SEARCH_FROM" "$SEARCH_TO")
+            if [[ -n "$BANKER_MSG_TX" ]]; then
+              echo "  Found BankerMessage TX: $BANKER_MSG_TX"
+              echo ""
+              run_save_quote "$BANKER_MSG_TX" 2>&1 | sed 's/^/  | /' || echo "  | save-quote failed"
+            else
+              echo "  WARNING: Could not find BankerMessage TX (quote not saved)"
+            fi
+            echo ""
+            echo "  Deal or NOT?"
+            ;;
           6) echo "  Final Round — keep or swap?" ;;
           8)
             echo "  GAME OVER!"
@@ -216,7 +252,7 @@ case "$CMD" in
 
   *)
     echo "Unknown command: $CMD"
-    echo "Usage: cre-simulate.sh <reveal|banker|support> [args...]"
+    echo "Usage: cre-simulate.sh <reveal|banker|savequote|support> [args...]"
     exit 1
     ;;
 esac
