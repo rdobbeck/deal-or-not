@@ -42,7 +42,7 @@ All workflows run in CRE simulate mode with `--broadcast`. Configs are generated
 | DealOrNotBridge | Base Sepolia | [`0xB233eFD1623f843151C97a1fB32f9115AaE6a875`](https://sepolia.basescan.org/address/0xB233eFD1623f843151C97a1fB32f9115AaE6a875) |
 | DealOrNotGateway | ETH Sepolia | [`0x366215E1F493f3420AbD5551c0618c2B28CBc18A`](https://sepolia.etherscan.io/address/0x366215E1F493f3420AbD5551c0618c2B28CBc18A) |
 
-Bridge registered with gateway, game contract set. Gateway has `homeBridge` pointing to bridge. Cross-chain `enterGame()` flow is wired but not yet tested E2E (requires the game contract to implement `joinGameCrossChain`).
+Fully wired: Bridge -> Gateway, Gateway -> Bridge, Game -> Bridge (`setCCIPBridge` called). The game contract's `joinGameCrossChain` function is ready. Cross-chain `enterGame()` flow not yet tested E2E (CCIP message delivery takes 5-20 minutes). Test with `bash scripts/e2e-full.sh ccip`.
 
 ### Frontend (wired)
 - `prototype/frontend/` points to convergence contract addresses
@@ -75,7 +75,7 @@ Plan: once validated, bring into convergence or update contract references. Thes
 
 - **game-timer CRE workflow**:cron-based game expiry. Low priority since game expiry is rare in practice.
 - **12-case game contract**:PRD-12.md design exists but implementation not started. Would be a separate contract (DealOrNotFullShow) reusing Bank, SponsorVault, and BestOfBanker.
-- **joinGameCrossChain**:the game contract needs this function for CCIP bridge to work E2E. Bridge and Gateway are deployed and wired, but the game-side integration is incomplete.
+- **CCIP E2E test**: Bridge, Gateway, and game contract are fully wired. Needs a live test with `bash scripts/e2e-full.sh ccip` (CCIP delivery takes 5-20 min).
 
 ## Roadmap
 
