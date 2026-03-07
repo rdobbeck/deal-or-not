@@ -156,6 +156,8 @@ EOF
 
 Without a Gemini key, the banker-ai workflow still computes offers but uses a fallback message.
 
+**Rate limits:** The free Gemini API tier allows ~20 requests per minute. A full game uses 3-4 Gemini calls (one per banker round). If you hit 429 errors, the banker falls back to a generic message -- the offer math still works, just no AI personality. Wait 30s or use a paid key for back-to-back games.
+
 ## Tests
 
 ```bash
