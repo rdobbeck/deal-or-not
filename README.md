@@ -1,225 +1,216 @@
 # Deal or NOT!
 
-**Onchain Deal or No Deal — provably fair via CRE Confidential Compute, AI Banker via Gemini, cross-chain via CCIP.**
+An on-chain game show powered by Chainlink. The name is the product: Deal Or Not = DON, running on the Chainlink DON (Decentralized Oracle Network). The Banker IS the DON.
 
-Convergence: A Chainlink Hackathon (Feb 6 – Mar 8, 2026) — Built by Ryan & Tippi Fifestarr
+Convergence: A Chainlink Hackathon (Feb 6 - Mar 8, 2026). Built by Ryan & Tippi Fifestarr.
 
-## The Problem We Solved
+## The Vision
 
-On a blockchain, every storage slot is public. For a game like Deal or No Deal, that's fatal — if a player can read the case values, they can game the system. We [started this project at ETHDenver](https://devfolio.co/projects/deal-or-not-9c01) and tried three approaches before finding the right one:
+Deal or NOT is not just a dApp. It is a live on-chain game show format.
 
-1. **Fisher-Yates shuffle** — All values stored on-chain. Anyone can read them with `eth_getStorageAt`. Broken.
-2. **ZK proofs (Groth16)** — Host commits a Merkle root, proves values with ZK. But we shipped with a `MockGroth16Verifier` that accepts everything. Broken.
-3. **Quantum collapse (commit-reveal)** — Values "don't exist" until opened via `hash(vrfSeed, caseIndex, blockhash)`. Sounds good, but the player can simulate the outcome after the commit block is mined and simply not reveal if the result is bad. Cost of attack: ~$0.005 on Base. Broken.
-4. **CRE Confidential Compute** — VRF seed on-chain for fairness + CRE-held secret for privacy + DON attestation for integrity. The player is missing a piece of the puzzle that only exists inside the CRE enclave. **This is the solution.**
+The format: host a Discord livestream, run a lottery round where audience buys in via CCIP from any chain, select a contestant, play the game live with the AI Banker trash-talking in real time, audience watches cases open on the watch page. Sponsors buy per-round placement. Seasons with leaderboards, grand finales with accumulated jackpots.
 
-The full technical journey is in [`Whitepaper.md`](Whitepaper.md) — it traces each approach, its attack vector, and why we ended up here.
+This is why CCIP is core, not a stretch goal. Every spoke chain is a distribution channel and a potential sponsor.
 
-## What We Built for Convergence
+## The Security Problem We Solved
 
-Five Chainlink products. Four CRE workflows. One game.
+On a blockchain, every storage slot is public. For Deal or No Deal, that is fatal. If a player can read case values, they can game the system. We [started this project at ETHDenver](https://devfolio.co/projects/deal-or-not-9c01) and tried three approaches before finding the right one:
 
-### Chainlink Products Used
+1. **Fisher-Yates shuffle**: all values stored on-chain. Anyone can read them with `eth_getStorageAt`. Broken.
+2. **ZK proofs (Groth16)**: host commits a Merkle root, proves values with ZK. But we shipped with a `MockGroth16Verifier` that accepts everything. Broken.
+3. **Commit-reveal ("quantum collapse")**: values "don't exist" until opened via `hash(vrfSeed, caseIndex, blockhash)`. Sounds good, but the player can simulate the outcome after the commit block and abort if the result is bad. Cost of attack: ~$0.005 on Base. Broken.
+4. **CRE Confidential Compute**: VRF seed on-chain for fairness + CRE-held secret for privacy + DON attestation for integrity. The player is missing a piece of the puzzle that only exists inside the CRE enclave. This is the solution.
 
-| Product | Role | Key Files |
-|---|---|---|
-| **VRF v2.5** | Provably random seed at game creation — ensures fair case value derivation | [`DealOrNotConfidential.sol`](prototype/contracts/src/DealOrNotConfidential.sol) (`createGame` → VRF request) |
-| **CRE Confidential Compute** | Case values derived from `hash(vrfSeed, caseIndex, CRE_SECRET, bitmap)` — player can't precompute | [`confidential-reveal/main.ts`](prototype/workflows/confidential-reveal/main.ts) |
-| **CRE + Gemini AI** | AI Banker personality — computes EV-based offer, calls Gemini 2.5 Flash for snarky messages, dual writeReport | [`banker-ai/main.ts`](prototype/workflows/banker-ai/main.ts), [`gemini.ts`](prototype/workflows/banker-ai/gemini.ts) |
-| **Price Feeds** | ETH/USD conversion for payouts, $0.02 upvotes on BestOfBanker gallery | [`DealOrNotConfidential.sol`](prototype/contracts/src/DealOrNotConfidential.sol), [`BestOfBanker.sol`](prototype/contracts/src/BestOfBanker.sol) |
-| **CCIP** | Cross-chain play — start games from ETH Sepolia, execute on Base Sepolia | [`DealOrNotGateway.sol`](prototype/contracts/src/ccip/DealOrNotGateway.sol), [`DealOrNotBridge.sol`](prototype/contracts/src/ccip/DealOrNotBridge.sol) |
+These alternatives were not just insecure, they were slow to develop and hard to test. Chainlink CRE + VRF gave us fast development (CRE SDK, VRF callbacks, Price Feed helpers), real security guarantees, and a working E2E prototype in days.
+
+The full technical journey is in [`Whitepaper.md`](Whitepaper.md).
+
+## Five Chainlink Products
+
+| Product | Role | Source | Deployed |
+|---------|------|--------|----------|
+| **VRF v2.5** | Provably random seed at game creation. Ensures fair case value derivation. | [`VRFManager.sol`](packages/convergence/src/VRFManager.sol), [`DealOrNotQuickPlay.sol`](packages/convergence/src/DealOrNotQuickPlay.sol) | [BaseScan](https://sepolia.basescan.org/address/0x46B6b547A4683ac5533CAce6aDc4d399b50424A7) |
+| **CRE Confidential Compute** | Case values derived from `hash(vrfSeed, caseIndex, CRE_SECRET, bitmap)`. Player cannot precompute. | [`confidential-reveal/main.ts`](packages/convergence/workflows/confidential-reveal/main.ts) | Writes to [game contract](https://sepolia.basescan.org/address/0x46B6b547A4683ac5533CAce6aDc4d399b50424A7) |
+| **CRE + Gemini 2.5 Flash** | AI Banker personality. Computes EV-based offer, calls Gemini for snarky messages. | [`banker-ai/main.ts`](packages/convergence/workflows/banker-ai/main.ts), [`gemini.ts`](packages/convergence/workflows/banker-ai/gemini.ts) | Writes to [game](https://sepolia.basescan.org/address/0x46B6b547A4683ac5533CAce6aDc4d399b50424A7) + [BestOfBanker](https://sepolia.basescan.org/address/0x55100EF4168d21631EEa6f2b73D6303Bb008F554) |
+| **Price Feeds** | ETH/USD conversion for entry fees, payouts, $0.02 upvotes on BestOfBanker gallery. | [`PriceFeedHelper.sol`](packages/convergence/src/PriceFeedHelper.sol), [`BestOfBanker.sol`](packages/convergence/src/BestOfBanker.sol) | [Bank](https://sepolia.basescan.org/address/0x5De581956fcCEAae90a0C4cf02E4bDDC7F1253BB), [BestOfBanker](https://sepolia.basescan.org/address/0x55100EF4168d21631EEa6f2b73D6303Bb008F554) |
+| **CCIP** | Cross-chain play. Start games from ETH Sepolia, execute on Base Sepolia. | [`DealOrNotGateway.sol`](packages/convergence/src/DealOrNotGateway.sol), [`DealOrNotBridge.sol`](packages/convergence/src/DealOrNotBridge.sol) | [Gateway (EtherScan)](https://sepolia.etherscan.io/address/0x366215E1F493f3420AbD5551c0618c2B28CBc18A), [Bridge (BaseScan)](https://sepolia.basescan.org/address/0xB233eFD1623f843151C97a1fB32f9115AaE6a875) |
 
 ### CRE Workflows (4 total)
 
-| Workflow | Trigger | What It Does | File |
-|---|---|---|---|
-| **confidential-reveal** | EVM Log: `CaseOpenRequested` | Reads VRF seed + game state from chain, derives case value with CRE secret, writes `fulfillCaseValue()` via Keystone Forwarder | [`main.ts`](prototype/workflows/confidential-reveal/main.ts) |
-| **banker-ai** | EVM Log: `RoundComplete` | Computes EV-based banker offer (TypeScript mirror of `BankerAlgorithm.sol`), calls Gemini for personality message, dual writeReport to game contract + BestOfBanker gallery | [`main.ts`](prototype/workflows/banker-ai/main.ts) |
-| **sponsor-jackpot** | EVM Log: `CaseOpenRequested` | Picks random jackpot amount from top 2 remaining case values, writes `addToJackpot()` on SponsorJackpot contract | [`main.ts`](prototype/workflows/sponsor-jackpot/main.ts) |
-| **game-timer** | Cron (every 10 min) | Scans last 5 games, expires stale ones via `expireGame()`, clears jackpots via `clearExpiredJackpot()` — two writeReport calls to different receivers | [`main.ts`](prototype/workflows/game-timer/main.ts) |
+| Workflow | Trigger | What It Does |
+|----------|---------|--------------|
+| **confidential-reveal** | `CaseOpenRequested` | Reads VRF seed + game state, derives case value with CRE secret via Confidential HTTP, writes `fulfillCaseValue()` |
+| **banker-ai** | `RoundComplete` | Computes EV-based offer, calls Gemini 2.5 Flash for personality message, writes offer + message to game contract |
+| **save-quote** | `BankerMessage` | Archives banker quote to BestOfBanker gallery contract |
+| **sponsor-jackpot** | `CaseOpenRequested` | Adds jackpot bonus from sponsor funds to player's game |
 
-### Smart Contracts
+## Deployed Contracts (Convergence)
 
-| Contract | Purpose | File |
-|---|---|---|
-| **DealOrNotConfidential** | Game logic — VRF, CRE case reveals, banker offers, `IReceiver` for Keystone Forwarder | [`src/DealOrNotConfidential.sol`](prototype/contracts/src/DealOrNotConfidential.sol) |
-| **BankerAlgorithm** | Pure library — EV calculation, discount curves, VRF-seeded variance, context adjustments | [`src/BankerAlgorithm.sol`](prototype/contracts/src/BankerAlgorithm.sol) |
-| **SponsorJackpot** | Sponsor deposits ETH, CRE distributes jackpot per case opening, player claims at game end | [`src/SponsorJackpot.sol`](prototype/contracts/src/SponsorJackpot.sol) |
-| **BestOfBanker** | Gallery of AI Banker quotes — CRE writes via `onReport`, readers upvote for $0.02 | [`src/BestOfBanker.sol`](prototype/contracts/src/BestOfBanker.sol) |
-| **DealOrNotGateway** | CCIP spoke on ETH Sepolia — accepts `createGame()` with entry fee, sends CCIP message to Base | [`src/ccip/DealOrNotGateway.sol`](prototype/contracts/src/ccip/DealOrNotGateway.sol) |
-| **DealOrNotBridge** | CCIP hub on Base Sepolia — receives CCIP message, calls `createGame()` on game contract | [`src/ccip/DealOrNotBridge.sol`](prototype/contracts/src/ccip/DealOrNotBridge.sol) |
+### Base Sepolia
+
+| Contract | Address |
+|----------|---------|
+| **DealOrNotQuickPlay** | [`0x46B6b547A4683ac5533CAce6aDc4d399b50424A7`](https://sepolia.basescan.org/address/0x46B6b547A4683ac5533CAce6aDc4d399b50424A7) |
+| **Bank** | [`0x5De581956fcCEAae90a0C4cf02E4bDDC7F1253BB`](https://sepolia.basescan.org/address/0x5De581956fcCEAae90a0C4cf02E4bDDC7F1253BB) |
+| **SponsorVault** | [`0x14a26cb376d8e36c47261A46d6b203A7BaADaE53`](https://sepolia.basescan.org/address/0x14a26cb376d8e36c47261A46d6b203A7BaADaE53) |
+| **BestOfBanker** | [`0x55100EF4168d21631EEa6f2b73D6303Bb008F554`](https://sepolia.basescan.org/address/0x55100EF4168d21631EEa6f2b73D6303Bb008F554) |
+| **DealOrNotBridge** (CCIP hub) | [`0xB233eFD1623f843151C97a1fB32f9115AaE6a875`](https://sepolia.basescan.org/address/0xB233eFD1623f843151C97a1fB32f9115AaE6a875) |
+
+### ETH Sepolia
+
+| Contract | Address |
+|----------|---------|
+| **DealOrNotGateway** (CCIP spoke) | [`0x366215E1F493f3420AbD5551c0618c2B28CBc18A`](https://sepolia.etherscan.io/address/0x366215E1F493f3420AbD5551c0618c2B28CBc18A) |
+
+### Chainlink Infrastructure
+
+| Service | Address |
+|---------|---------|
+| VRF Coordinator | `0x5C210eF41CD1a72de73bF76eC39637bB0d3d7BEE` |
+| ETH/USD Price Feed | `0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1` |
+| CRE Keystone Forwarder | `0x82300bd7c3958625581cc2F77bC6464dcEcDF3e5` |
 
 ## Architecture
 
 ```
                               CHAINLINK DON
-                    ┌─────────────────────────────────┐
-                    │  CRE Workflows:                  │
-                    │                                   │
-                    │  confidential-reveal              │
-                    │    VRF seed + CRE secret          │
-                    │    → fulfillCaseValue()            │
-                    │                                   │
-                    │  banker-ai                        │
-                    │    EV offer + Gemini 2.5 Flash     │
-                    │    → setBankerOfferWithMessage()   │
-                    │    → saveQuote() (BestOfBanker)    │
-                    │                                   │
-                    │  sponsor-jackpot                  │
-                    │    → addToJackpot()                │
-                    │                                   │
-                    │  game-timer (cron)                │
-                    │    → expireGame()                  │
-                    │    → clearExpiredJackpot()         │
-                    └──────────┬──────────────────────┘
-                               │ writeReport via
-                               │ Keystone Forwarder
-                               ▼
+                    +-----------------------------------+
+                    |  CRE Workflows:                   |
+                    |                                   |
+                    |  confidential-reveal              |
+                    |    VRF seed + CRE secret           |
+                    |    -> fulfillCaseValue()            |
+                    |                                   |
+                    |  banker-ai                        |
+                    |    EV offer + Gemini 2.5 Flash     |
+                    |    -> setBankerOfferWithMessage()   |
+                    |                                   |
+                    |  save-quote                       |
+                    |    -> saveQuote() (BestOfBanker)    |
+                    |                                   |
+                    |  sponsor-jackpot                  |
+                    |    -> addToJackpot()                |
+                    +----------------+------------------+
+                                     | writeReport via
+                                     | Keystone Forwarder
+                                     v
   ETH Sepolia              BASE SEPOLIA
-  ┌──────────────┐         ┌─────────────────────────────────┐
-  │ Gateway      │  CCIP   │ DealOrNotConfidential           │
-  │ (CCIP spoke) │ ──────→ │   + VRF v2.5 + Price Feeds      │
-  └──────────────┘         │                                 │
-                           │ SponsorJackpot · BestOfBanker   │
-                           │ DealOrNotBridge (CCIP hub)      │
-                           └─────────────────────────────────┘
-                                          ▲
-                                          │
-                                   ┌──────┴──────┐
-                                   │  Frontend   │
-                                   │  Next.js    │
-                                   └─────────────┘
+  +--------------+         +-----------------------------------+
+  | Gateway      |  CCIP   | DealOrNotQuickPlay                |
+  | (CCIP spoke) | ------> |   + VRF v2.5 + Price Feeds         |
+  +--------------+         |   + Bank (standalone)              |
+                           |                                   |
+                           | SponsorVault . BestOfBanker        |
+                           | DealOrNotBridge (CCIP hub)         |
+                           +-----------------------------------+
+                                          ^
+                                          |
+                                   +------+------+
+                                   |  Frontend   |
+                                   |  Next.js    |
+                                   +-------------+
 ```
-
-## Deployed Contracts (Base Sepolia)
-
-| Contract | Address |
-|---|---|
-| **DealOrNotConfidential** | [`0xd9D4A974021055c46fD834049e36c21D7EE48137`](https://sepolia.basescan.org/address/0xd9D4A974021055c46fD834049e36c21D7EE48137) |
-| **SponsorJackpot** | [`0xc6b4Ba33f59816F1B47818EFf928e9a48F7ddC95`](https://sepolia.basescan.org/address/0xc6b4Ba33f59816F1B47818EFf928e9a48F7ddC95) |
-| **BestOfBanker** | [`0x05EdC924f92aBCbbB91737479948509dC7E23bF9`](https://sepolia.basescan.org/address/0x05EdC924f92aBCbbB91737479948509dC7E23bF9) |
-| **DealOrNotGateway** (ETH Sepolia) | [`0xaB2995091CCE608d1F3f18f36F8e6615aB2fc124`](https://sepolia.etherscan.io/address/0xaB2995091CCE608d1F3f18f36F8e6615aB2fc124) |
-| **DealOrNotBridge** (Base Sepolia) | [`0xcF3B0d1575b30B53d8Db4EDe30Ebb47D51a2650a`](https://sepolia.basescan.org/address/0xcF3B0d1575b30B53d8Db4EDe30Ebb47D51a2650a) |
-
-VRF Coordinator: `0x5C210eF41CD1a72de73bF76eC39637bB0d3d7BEE` · Price Feed (ETH/USD): `0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1` · Keystone Forwarder: `0x82300bd7c3958625581cc2F77bC6464dcEcDF3e5`
 
 ## Game Flow
 
 ```
-createGame() ──→ VRF generates seed (~60s)
-pickCase()   ──→ Choose your case (0-4)
-openCase()   ──→ Emits CaseOpenRequested ──→ CRE reveals value
-                                           ──→ CRE adds jackpot
-             ──→ After reveal: RoundComplete ──→ CRE AI Banker
+createGame() --> VRF generates seed (~10s on Base Sepolia)
+pickCase()   --> Choose your case (0-4)
+openCase()   --> Emits CaseOpenRequested --> CRE reveals value
+                                         --> CRE adds jackpot
+             --> After reveal: RoundComplete --> CRE AI Banker
                    Gemini generates snarky message
                    Offer appears on-chain
 
 Player decides: DEAL (acceptDeal) or NOT (rejectDeal)
-  NOT → next round → openCase → CRE reveal → CRE banker → repeat
-  DEAL → game over, payout settled
+  NOT -> next round -> openCase -> CRE reveal -> CRE banker -> repeat
+  DEAL -> game over, payout settled from Bank
 
-Final Round: 2 cases left → keepCase() or swapCase()
-  CRE reveals remaining values → game over
+Final Round: 2 cases left -> keepCase() or swapCase()
+  CRE reveals remaining values -> game over
 ```
 
-## Quick Start
+## Quick Start for Judges
 
-### Run the Frontend
+### Verify on-chain (no setup required)
+
+```bash
+# Check bank is active and funded
+cast call 0x5De581956fcCEAae90a0C4cf02E4bDDC7F1253BB "isActive()(bool)" --rpc-url https://sepolia.base.org
+
+# Check BestOfBanker has AI quotes
+cast call 0x55100EF4168d21631EEa6f2b73D6303Bb008F554 "quoteCount()(uint256)" --rpc-url https://sepolia.base.org
+
+# Read a game state (game 8 is a complete game)
+cast call 0x46B6b547A4683ac5533CAce6aDc4d399b50424A7 \
+  "getGameState(uint256)(address,address,uint8,uint8,uint8,uint8,uint8,uint256,uint256,uint256,uint256[5],bool[5])" \
+  8 --rpc-url https://sepolia.base.org
+```
+
+### Play a full game (requires Foundry + CRE CLI)
+
+```bash
+cd packages/convergence
+
+# Create game, wait for VRF, pick case, open case, run CRE
+bash scripts/play-game.sh create
+bash scripts/play-game.sh state <GID>
+bash scripts/play-game.sh pick <GID> 2
+bash scripts/play-game.sh open <GID> 0
+bash scripts/cre-simulate.sh reveal <TX> 0
+bash scripts/cre-simulate.sh banker <REVEAL_TX> 1
+bash scripts/play-game.sh reject <GID>
+# ... repeat until final round
+bash scripts/play-game.sh keep <GID>
+```
+
+### Run the frontend
 
 ```bash
 cd prototype/frontend
 npm install
 npm run dev
 # Visit http://localhost:3000
-```
-
-### Two Testing Modes
-
-**Human Player** — play in the browser, `cre-support.sh` handles CRE automatically:
-
-```bash
-cd prototype/frontend && npm run dev      # Terminal 1: start frontend
-
-cd prototype && source scripts/env.sh     # Terminal 2: CRE auto-support
-# Create game in browser with MetaMask, then:
-zsh scripts/cre-support.sh <GID>          # Watches game, auto-runs all CRE workflows
-```
-
-The script polls game state every 5s and auto-triggers CRE reveals, AI Banker (Gemini 2.5 Flash), and sponsor jackpot as you play. Just play in the browser — the script handles the rest.
-
-**Claude / AI Agent** — full CLI game + Playwright UI verification:
-
-```bash
-cd prototype
-source scripts/env.sh
-
-zsh scripts/play-game.sh create           # Create game (wait ~60s for VRF)
-zsh scripts/play-game.sh pick <GID> 3     # Pick case #3
-zsh scripts/play-game.sh open <GID> 0     # Open case #0 → get TX hash
-zsh scripts/cre-reveal.sh <TX>            # CRE reveals case value
-zsh scripts/cre-banker.sh <REVEAL_TX>     # AI Banker + Gemini message
-zsh scripts/play-game.sh reject <GID>     # NO DEAL!
-```
-
-Claude can play end-to-end via `cast send` (no wallet needed), then verify the frontend with Playwright screenshots in spectator mode. State checks via `play-game.sh state <GID>`.
-
-**Script architecture**: `cre-support.sh` is the meta script that watches a game and auto-runs the right CRE workflow at each phase. Under the hood it calls micro scripts: `cre-reveal.sh` (confidential reveal), `cre-banker.sh` (AI Banker + Gemini), `cre-jackpot.sh` (sponsor jackpot), `cre-timer.sh` (game expiry). In CLI mode, Claude calls the micro scripts directly.
-
-**Full E2E walkthroughs, CRE trigger map, and sponsor setup:** see [`prototype/contracts/README.md`](prototype/contracts/README.md)
-
-### Build Contracts
-
-```bash
-cd prototype/contracts
-forge build
-forge test
+# Watch a game: http://localhost:3000/watch/8
 ```
 
 ## Project Structure
 
 ```
 deal-or-not/
-├── prototype/                 # Active development — CRE Confidential prototype
-│   ├── contracts/             # Foundry — DealOrNotConfidential, SponsorJackpot, BestOfBanker, CCIP
-│   ├── frontend/              # Next.js — game UI, BestOfBanker gallery
-│   ├── workflows/             # CRE workflows (4 total)
-│   │   ├── confidential-reveal/   # Case value reveals
-│   │   ├── banker-ai/             # AI Banker + Gemini
-│   │   ├── sponsor-jackpot/       # Jackpot distribution
-│   │   └── game-timer/            # Game expiry cron
-│   └── scripts/               # Testing scripts (play-game, cre-reveal, cre-banker, etc.)
-│
-├── Whitepaper.md              # Technical deep dive — 4 approaches to hiding case values
-├── PRD.md                     # Product requirements for Convergence hackathon
-├── GAP_ANALYSIS.md            # PRD vs current state
-│
-├── packages/                  # ETHDenver legacy — ZK Mode + Scaffold-ETH 2
-│   ├── foundry/               # 26-case game with ZK proofs (MockGroth16Verifier)
-│   ├── circuits/              # Circom ZK circuits
-│   └── nextjs/                # Original frontend
-│
-└── deal/                      # ETHDenver legacy — Brodinger's Case (Hardhat)
-    ├── contracts/              # CashCase.sol — quantum collapse (vulnerable to selective reveal)
-    └── test/                   # Hardhat tests
++-- packages/convergence/        # Production rewrite (active)
+|   +-- src/                     # Solidity contracts (10 files)
+|   +-- test/                    # Forge tests (47 tests)
+|   +-- workflows/               # CRE workflows (4 total)
+|   +-- scripts/                 # CLI game + CRE helpers
+|   +-- script/                  # Forge deploy scripts
+|
++-- prototype/                   # CRE Confidential prototype (original)
+|   +-- contracts/               # Foundry, monolith contract
+|   +-- frontend/                # Next.js frontend (shared)
+|   +-- workflows/               # CRE workflows (original versions)
+|   +-- scripts/                 # Testing scripts
+|
++-- Whitepaper.md                # 4 approaches to hiding case values
++-- PRD.md                       # Product requirements
++-- HACKATHON.md                 # Hackathon submission details
+|
++-- packages/foundry/            # ETHDenver legacy (ZK Mode)
++-- deal/                        # ETHDenver legacy (Brodinger's Case)
 ```
+
+The `packages/convergence/` package is the production version. It splits the prototype monolith into focused, testable contracts. The `prototype/` package proved the concept. The `prototype/frontend/` is shared and points to convergence contract addresses.
 
 ## Origin: ETHDenver 2026
 
-We [built the first version at ETHDenver](https://devfolio.co/projects/deal-or-not-9c01) in a couple of days. We had two separate game contracts (ZK Mode and Brodinger's Case), a working frontend, and good ideas — but neither approach was actually secure:
-
-- **ZK Mode** shipped with `MockGroth16Verifier` that accepts any proof
-- **Brodinger's Case** had a selective reveal vulnerability — the player can simulate `hash(vrfSeed, caseIndex, blockhash)` after the commit block is mined and abort if the result is bad (~$0.005 per attempt on Base)
-
-The Chainlink Convergence hackathon gave us the right tool to fix this: **CRE Confidential Compute**. Values are derived from a combination of a public VRF seed and a private CRE-held secret, making them simultaneously provably fair and computationally private. One transaction per round. No commit-reveal. No trusted scripts.
-
-See the legacy code in `packages/` and `deal/` for the historical approaches, and [`Whitepaper.md`](Whitepaper.md) for the full technical analysis.
+We [built the first version at ETHDenver](https://devfolio.co/projects/deal-or-not-9c01). Two separate game contracts (ZK Mode and Brodinger's Case), a working frontend, and good ideas, but neither approach was actually secure. The Chainlink Convergence hackathon gave us the right tool: CRE Confidential Compute. See [`Whitepaper.md`](Whitepaper.md) for the full analysis.
 
 ## Sponsor Technologies
 
-- **Chainlink** — VRF v2.5 (fairness), CRE Confidential Compute (privacy), CRE HTTP consensus + Gemini (AI Banker), Price Feeds (USD conversion), CCIP (cross-chain play)
-- **Google Gemini** — Gemini 2.5 Flash for AI Banker personality messages via CRE HTTP consensus
-- **Base** — Primary deployment chain (Base Sepolia)
-- **Scaffold-ETH 2** — Development framework and UI components
+- **Chainlink**: VRF v2.5 (fairness), CRE Confidential Compute (privacy), CRE HTTP + Gemini (AI Banker), Price Feeds (USD conversion), CCIP (cross-chain play)
+- **Google Gemini**: Gemini 2.5 Flash for AI Banker personality via CRE HTTP consensus
+- **Base**: Primary deployment chain (Base Sepolia)
+- **Scaffold-ETH 2**: Development framework and UI components
 
 ## License
 

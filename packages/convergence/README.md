@@ -1,10 +1,35 @@
-# Deal or NOT -- Convergence Package
+# Deal or NOT: Convergence Package
 
-**The production-grade successor to `prototype/`.** Real ETH, real Chainlink VRF, real CRE workflows -- all rewritten with proper separation of concerns.
+The production-grade successor to `prototype/`. Real ETH, real Chainlink VRF, real CRE workflows, all rewritten with proper separation of concerns.
+
+## For Judges
+
+Direct links to each Chainlink integration:
+
+- **VRF v2.5**: [`VRFManager.sol`](src/VRFManager.sol) + [`DealOrNotQuickPlay.sol:createGame()`](src/DealOrNotQuickPlay.sol)
+- **CRE Confidential Compute**: [`confidential-reveal/main.ts`](workflows/confidential-reveal/main.ts)
+- **CRE + Gemini AI (Confidential HTTP)**: [`banker-ai/main.ts`](workflows/banker-ai/main.ts) + [`banker-ai/gemini.ts`](workflows/banker-ai/gemini.ts)
+- **Price Feeds**: [`PriceFeedHelper.sol`](src/PriceFeedHelper.sol)
+- **CCIP**: [`DealOrNotBridge.sol`](src/DealOrNotBridge.sol) + [`DealOrNotGateway.sol`](src/DealOrNotGateway.sol)
+
+Verify on-chain (no setup needed):
+
+```bash
+# Bank active and funded?
+cast call 0x5De581956fcCEAae90a0C4cf02E4bDDC7F1253BB "isActive()(bool)" --rpc-url https://sepolia.base.org
+
+# AI quotes saved?
+cast call 0x55100EF4168d21631EEa6f2b73D6303Bb008F554 "quoteCount()(uint256)" --rpc-url https://sepolia.base.org
+
+# Game 8 (complete E2E game):
+cast call 0x46B6b547A4683ac5533CAce6aDc4d399b50424A7 \
+  "getGameState(uint256)(address,address,uint8,uint8,uint8,uint8,uint8,uint256,uint256,uint256,uint256[5],bool[5])" \
+  8 --rpc-url https://sepolia.base.org
+```
 
 ## Why Convergence?
 
-The `prototype/` package proved the concept: 5-case Deal or NOT with VRF randomness, CRE confidential compute, and Gemini AI banker. But it was a monolith -- one massive contract (`DealOrNotConfidential`) handling game logic, banking, price feeds, VRF, and CRE interactions all at once.
+The `prototype/` package proved the concept: 5-case Deal or NOT with VRF randomness, CRE confidential compute, and Gemini AI banker. But it was a monolith, one massive contract (`DealOrNotConfidential`) handling game logic, banking, price feeds, VRF, and CRE interactions all at once.
 
 **Convergence splits everything into focused, testable contracts:**
 
@@ -28,6 +53,8 @@ The `prototype/` package proved the concept: 5-case Deal or NOT with VRF randomn
 | **Bank** | [`0x5De581956fcCEAae90a0C4cf02E4bDDC7F1253BB`](https://sepolia.basescan.org/address/0x5De581956fcCEAae90a0C4cf02E4bDDC7F1253BB) |
 | **SponsorVault** | [`0x14a26cb376d8e36c47261A46d6b203A7BaADaE53`](https://sepolia.basescan.org/address/0x14a26cb376d8e36c47261A46d6b203A7BaADaE53) |
 | **BestOfBanker** | [`0x55100EF4168d21631EEa6f2b73D6303Bb008F554`](https://sepolia.basescan.org/address/0x55100EF4168d21631EEa6f2b73D6303Bb008F554) |
+| **DealOrNotBridge** (CCIP hub) | [`0xB233eFD1623f843151C97a1fB32f9115AaE6a875`](https://sepolia.basescan.org/address/0xB233eFD1623f843151C97a1fB32f9115AaE6a875) |
+| **DealOrNotGateway** (ETH Sepolia, CCIP spoke) | [`0x366215E1F493f3420AbD5551c0618c2B28CBc18A`](https://sepolia.etherscan.io/address/0x366215E1F493f3420AbD5551c0618c2B28CBc18A) |
 | CRE Keystone Forwarder | `0x82300bd7c3958625581cc2F77bC6464dcEcDF3e5` |
 | VRF Coordinator | `0x5C210eF41CD1a72de73bF76eC39637bB0d3d7BEE` |
 | ETH/USD Price Feed | `0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1` |
@@ -56,7 +83,7 @@ keep/swap        -->   GameOver
 | `save-quote` | `BankerMessage` | Archives banker quote to BestOfBanker gallery |
 | `sponsor-jackpot` | `CaseOpenRequested` | Adds jackpot bonus from sponsor funds (optional) |
 
-All workflows run in CRE simulate mode. Configs are generated at runtime from env vars -- never committed.
+All workflows run in CRE simulate mode. Configs are generated at runtime from env vars, never committed.
 
 ## Playing a Game
 
@@ -122,8 +149,8 @@ bash scripts/cre-simulate.sh support <GID>
 | 2 | Round | Open cases this round |
 | 3 | WaitingForCRE | Case opened, CRE revealing value |
 | 4 | AwaitingOffer | Revealed, waiting for AI Banker |
-| 5 | BankerOffer | Offer in -- Deal or NOT? |
-| 6 | FinalRound | 2 cases left -- keep or swap |
+| 5 | BankerOffer | Offer in. Deal or NOT? |
+| 6 | FinalRound | 2 cases left, keep or swap |
 | 7 | WaitingFinalCRE | Final reveal in progress |
 | 8 | GameOver | Done |
 
@@ -156,7 +183,7 @@ EOF
 
 Without a Gemini key, the banker-ai workflow still computes offers but uses a fallback message.
 
-**Rate limits:** The free Gemini API tier allows ~20 requests per hour. A full game uses 3 Gemini calls (one per banker round). Back-to-back games can exhaust the quota. If you hit 429 errors, the banker falls back to a generic message -- the offer math still works, just no AI personality. Wait for the quota to reset or use a paid key.
+**Rate limits:** The free Gemini API tier allows ~20 requests per hour. A full game uses 3 Gemini calls (one per banker round). Back-to-back games can exhaust the quota. If you hit 429 errors, the banker falls back to a generic message. The offer math still works, just no AI personality. Wait for the quota to reset or use a paid key.
 
 ## Tests
 
@@ -165,10 +192,10 @@ forge test
 ```
 
 47 tests across 4 files:
-- `Bank.t.sol` -- deposit, withdraw, sweeten, entry fee math
-- `SponsorVault.t.sol` -- register, sponsor, jackpot, claim
-- `PriceFeedHelper.t.sol` -- ETH/USD conversion
-- `DealOrNotQuickPlay.t.sol` -- full game flow with mock VRF
+- `Bank.t.sol`: deposit, withdraw, sweeten, entry fee math
+- `SponsorVault.t.sol`: register, sponsor, jackpot, claim
+- `PriceFeedHelper.t.sol`: ETH/USD conversion
+- `DealOrNotQuickPlay.t.sol`: full game flow with mock VRF
 
 ## Deploying Fresh
 
@@ -195,4 +222,4 @@ This package is the home of the hackathon project going forward. As we validate 
 - Bank: new standalone contract (prototype had inline banking)
 - CRE workflows: migrated, configs now generated at runtime
 - Frontend: still in `prototype/frontend/` for now (or `packages/nextjs/`)
-- CCIP bridge: `DealOrNotGateway` + `DealOrNotBridge` -- contracts exist in `src/` but not yet deployed in convergence
+- CCIP bridge: `DealOrNotGateway` + `DealOrNotBridge`, deployed March 7 on ETH Sepolia + Base Sepolia
