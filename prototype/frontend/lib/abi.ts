@@ -140,10 +140,20 @@ export const DEAL_OR_NOT_ABI = [
   // ── Write Functions ──
   {
     type: "function",
+    name: "estimateEntryFee",
+    inputs: [],
+    outputs: [
+      { name: "baseWei", type: "uint256" },
+      { name: "withSlippage", type: "uint256" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "createGame",
     inputs: [],
     outputs: [{ name: "gameId", type: "uint256" }],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
   },
   {
     type: "function",

@@ -5,6 +5,7 @@ import { useAccount, useConnect, useDisconnect, useBalance, usePublicClient, use
 import {
   useGameState,
   useNextGameId,
+  useEntryFee,
   useRemainingPool,
   useBankerOfferCalc,
   useCentsToWei,
@@ -68,6 +69,7 @@ export default function GameBoard() {
 
   const { gameState, refetch } = useGameState(gameId);
   const { nextGameId } = useNextGameId();
+  const { withSlippage: entryFee } = useEntryFee();
   const { remainingValues } = useRemainingPool(gameId);
   const { writeContractAsync } = useWriteContract();
 
@@ -156,6 +158,7 @@ export default function GameBoard() {
       const hash = await writeContractAsync({
         ...contractConfig,
         functionName: "createGame",
+        value: entryFee,
       });
       setGameId(currentNextId);
       if (publicClient) {

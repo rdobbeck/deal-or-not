@@ -59,6 +59,19 @@ export function useNextGameId() {
   return { nextGameId: data as bigint | undefined, refetch };
 }
 
+export function useEntryFee() {
+  const { data, refetch } = useReadContract({
+    ...contractConfig,
+    functionName: "estimateEntryFee",
+    query: { refetchInterval: 30000 },
+  });
+  return {
+    baseWei: data ? (data as [bigint, bigint])[0] : undefined,
+    withSlippage: data ? (data as [bigint, bigint])[1] : undefined,
+    refetch,
+  };
+}
+
 export function useRemainingPool(gameId: bigint | undefined) {
   const { data, refetch } = useReadContract({
     ...contractConfig,
@@ -151,10 +164,11 @@ export function useJackpotClaimed(gameId: bigint | undefined) {
 export function useGameWrite() {
   const { writeContractAsync, isPending } = useWriteContract();
 
-  const createGame = async () => {
+  const createGame = async (value?: bigint) => {
     return writeContractAsync({
       ...contractConfig,
       functionName: "createGame",
+      value,
     });
   };
 
