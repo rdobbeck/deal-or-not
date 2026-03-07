@@ -31,14 +31,22 @@ case "$CMD" in
     echo "Entry fee (with slippage): $FEE wei"
     echo ""
     echo "Creating new QuickPlay game with \$0.25 entry..."
-    cast send "$GAME_CONTRACT" "createGame()" \
+    RESULT=$(cast send "$GAME_CONTRACT" "createGame()" \
       --value "$FEE" \
-      --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL"
-    NEXT=$(cast call "$GAME_CONTRACT" "nextGameId()(uint256)" --rpc-url "$RPC_URL" | awk '{print $1}')
+      --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --json 2>&1) || { echo "Error: $RESULT"; exit 1; }
+    echo "$RESULT" | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin), indent=2))" | head -5
+    GID=$(echo "$RESULT" | python3 -c "
+import json,sys
+r = json.load(sys.stdin)
+for log in r['logs']:
+    if log['address'].lower() == '${GAME_CONTRACT,,}':
+        if len(log['topics']) >= 2:
+            print(int(log['topics'][1], 16)); break
+")
     echo ""
-    echo "Game created! Your game ID: $((NEXT - 1))"
+    echo "Game created! Your game ID: $GID"
     echo "Entry fee forwarded to Bank."
-    echo "Wait ~10s for VRF, then: ./scripts/play-game.sh state $((NEXT - 1))"
+    echo "Wait ~10s for VRF, then: ./scripts/play-game.sh state $GID"
     ;;
 
   pick)

@@ -170,7 +170,7 @@ case "$CMD" in
 
   savequote)
     TX_HASH="${1:?Usage: cre-simulate.sh savequote <TX_HASH> [EVENT_INDEX]}"
-    EVENT_INDEX="${2:-0}"
+    EVENT_INDEX="${2:-1}"
     run_save_quote "$TX_HASH" "$EVENT_INDEX"
     ;;
 
@@ -251,7 +251,7 @@ case "$CMD" in
             if [[ -n "$BANKER_MSG_TX" ]]; then
               echo "  Found BankerMessage TX: $BANKER_MSG_TX"
               echo ""
-              run_save_quote "$BANKER_MSG_TX" 2>&1 | sed 's/^/  | /' || echo "  | save-quote failed"
+              run_save_quote "$BANKER_MSG_TX" 1 2>&1 | sed 's/^/  | /' || echo "  | save-quote failed"
             else
               echo "  WARNING: Could not find BankerMessage TX (quote not saved)"
             fi
