@@ -1,0 +1,20 @@
+{
+  "name": "deal-or-not-sponsor-jackpot",
+  "version": "0.1.0",
+  "main": "dist/main.js",
+  "private": true,
+  "description": "CRE log-trigger workflow: add sponsor jackpot on each case opening",
+  "scripts": {
+    "postinstall": "bun x cre-setup",
+    "simulate": "cre workflow simulate workflow --non-interactive --trigger-index 0",
+    "simulate:broadcast": "cre workflow simulate workflow --non-interactive --trigger-index 0 --broadcast"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@chainlink/cre-sdk": "^1.1.1",
+    "viem": "^2.34.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.2.21"
+  }
+}

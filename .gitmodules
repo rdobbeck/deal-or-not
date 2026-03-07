@@ -7,3 +7,12 @@
 [submodule "prototype/contracts/lib/forge-std"]
 	path = prototype/contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "packages/convergence/lib/forge-std"]
+	path = packages/convergence/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "packages/convergence/lib/chainlink-brownie-contracts"]
+	path = packages/convergence/lib/chainlink-brownie-contracts
+	url = https://github.com/smartcontractkit/chainlink-brownie-contracts
+[submodule "packages/convergence/lib/openzeppelin-contracts"]
+	path = packages/convergence/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
