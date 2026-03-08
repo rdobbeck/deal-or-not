@@ -1,0 +1,63 @@
+specVersion: 1.0.0
+name: deal-or-not-market-creator
+version: 1.0.0
+owner: deal-or-not@example.com
+description: Auto-creates prediction markets for agent games
+
+# Staging configuration (Base Sepolia)
+staging:
+  triggers:
+    - type: EVENT_LOG
+      config:
+        network: base-sepolia
+        address: "0xd9D4A974021055c46fD834049e36c21D7EE48137"  # DealOrNotConfidential
+        eventSignature: "GameCreated(uint256,address,address)"
+        confirmations: 1
+
+  actions:
+    - type: CRE_WORKFLOW
+      config:
+        runtime: bun
+        entrypoint: src/index.ts
+        secrets:
+          - name: PRIVATE_KEY
+            source: vault://deal-or-not/market-creator-key
+          - name: BASE_SEPOLIA_RPC
+            source: vault://deal-or-not/base-rpc
+
+    - type: WRITE_REPORT
+      config:
+        network: base-sepolia
+        forwarder: "0x82300bd7c3958625581cc2F77bC6464dcEcDF3e5"
+        receiver: "0x8606Ed23CBa4903e10F26Bc756E70d867dEDDcC4"  # PredictionMarket
+        method: "createMarket(uint256,uint256,uint8,uint256,uint256)"
+        gasLimit: 300000
+
+# Production configuration (Base Mainnet)
+production:
+  triggers:
+    - type: EVENT_LOG
+      config:
+        network: base-mainnet
+        address: "<MAINNET_DEAL_OR_NOT_ADDRESS>"
+        eventSignature: "GameCreated(uint256,address,address)"
+        confirmations: 2
+
+  actions:
+    - type: CRE_WORKFLOW
+      config:
+        runtime: bun
+        entrypoint: src/index.ts
+        secrets:
+          - name: PRIVATE_KEY
+            source: vault://deal-or-not/market-creator-key-prod
+          - name: BASE_RPC
+            source: vault://deal-or-not/base-rpc-prod
+
+    - type: WRITE_REPORT
+      config:
+        network: base-mainnet
+        forwarder: "<MAINNET_KEYSTONE_FORWARDER>"
+        receiver: "<MAINNET_PREDICTION_MARKET_ADDRESS>"
+        method: "createMarket(uint256,uint256,uint8,uint256,uint256)"
+        gasLimit: 300000
