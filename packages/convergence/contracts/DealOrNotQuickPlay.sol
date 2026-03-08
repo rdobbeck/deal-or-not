@@ -7,6 +7,7 @@ import {PriceFeedHelper} from "./PriceFeedHelper.sol";
 import {GameMath} from "./GameMath.sol";
 import {BankerAlgorithm} from "./BankerAlgorithm.sol";
 import {Bank} from "./Bank.sol";
+import {JackpotTicket} from "./JackpotTicket.sol";
 
 /// @notice IReceiver -- Keystone Forwarder delivers CRE reports via this interface.
 interface IReceiver {
@@ -45,6 +46,7 @@ contract DealOrNotQuickPlay is VRFManager, IReceiver {
 
     // ── External Contracts ──
     Bank public bank;
+    JackpotTicket public jackpotTicketContract;
 
     // ── CRE Config ──
     address public creForwarder;
@@ -120,6 +122,7 @@ contract DealOrNotQuickPlay is VRFManager, IReceiver {
     event PlayerJoinedCrossChain(uint256 indexed gameId, address indexed player);
     event GameExpired(uint256 indexed gameId);
     event FundsRescued(address indexed to, uint256 amount);
+    event JackpotTicketMinted(uint256 indexed gameId, address indexed player, uint256 ticketId);
 
     // ── Errors ──
     error WrongPhase(Phase expected, Phase actual);
@@ -523,6 +526,10 @@ contract DealOrNotQuickPlay is VRFManager, IReceiver {
         bank = Bank(payable(_bank));
     }
 
+    function setJackpotTicketContract(address _ticketContract) external onlyOwner {
+        jackpotTicketContract = JackpotTicket(_ticketContract);
+    }
+
     receive() external payable {}
 
     // ════════════════════════════════════════════════════════
@@ -608,6 +615,12 @@ contract DealOrNotQuickPlay is VRFManager, IReceiver {
 
         // Settle payout from Bank
         bank.settle(g.finalPayout, g.player, g.ethPerDollar);
+
+        // Mint jackpot ticket if won $1.00 case (highest value)
+        if (playerValue == CASE_VALUES_CENTS[NUM_CASES - 1] && address(jackpotTicketContract) != address(0)) {
+            uint256 ticketId = jackpotTicketContract.mint(g.player, gameId);
+            emit JackpotTicketMinted(gameId, g.player, ticketId);
+        }
 
         emit CaseRevealed(gameId, g.playerCase, playerValue);
         emit GameResolved(gameId, g.finalPayout, false);
