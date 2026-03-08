@@ -1,12 +1,27 @@
-**Bug: `cre workflow simulate` fails with `encryptOutput: true` after upgrading to CRE CLI v1.3.0**
+**Update: `encryptOutput` placement resolved — user error, not a CLI regression**
+
+Earlier I reported this error after upgrading to CRE CLI v1.3.0:
 
 ```
 ✗ Workflow execution failed:
 cannot decode message capabilities.networking.confidentialhttp.v1alpha.ConfidentialHTTPRequest from JSON: key "encryptOutput" is unknown
 ```
 
-This worked fine in CLI v1.2.0. The SDK (`@chainlink/cre-sdk@1.1.4`) defines `encryptOutput` as field 9 in `client_pb.d.ts` — looks like the CLI v1.3.0 protobuf schema is missing the field.
+Turns out we accidentally moved `encryptOutput` to the wrong nesting level when porting our workflows. Our prototype had it correct (inside `request`), but the convergence port put it at the outer `ConfidentialHTTPRequest` level.
 
-We're using `encryptOutput: true` on `ConfidentialHTTPClient.sendRequest()` to encrypt entropy and Gemini API responses inside the enclave. It's a key part of our CRE privacy model for the hackathon submission (Deal or NOT).
+```typescript
+// WRONG — we had this
+confHTTPClient.sendRequest(runtime, {
+  request: { url, method: "GET" },
+  encryptOutput: true,        // ← wrong level
+  vaultDonSecrets: [],
+})
 
-Is this a known regression, or is there a workaround? Deadline is tonight.
+// CORRECT — encryptOutput is field 9 on HTTPRequest
+confHTTPClient.sendRequest(runtime, {
+  request: { url, method: "GET", encryptOutput: true },
+  vaultDonSecrets: [],
+})
+```
+
+Working great on CRE CLI v1.3.0 + SDK v1.1.4. Sorry for the false alarm!
