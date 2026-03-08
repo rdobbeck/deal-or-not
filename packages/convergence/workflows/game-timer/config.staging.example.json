@@ -1,0 +1,7 @@
+{
+  "quickPlayAddress": "0xYOUR_QUICKPLAY_CONTRACT",
+  "agentsAddress": "0xYOUR_AGENTS_CONTRACT",
+  "chainSelectorName": "ethereum-testnet-sepolia-base-1",
+  "gasLimit": "300000",
+  "scanWindow": "5"
+}

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {DealOrNotQuickPlay} from "../src/DealOrNotQuickPlay.sol";
-import {Bank} from "../src/Bank.sol";
-import {SponsorVault} from "../src/SponsorVault.sol";
-import {BestOfBanker} from "../src/BestOfBanker.sol";
+import {DealOrNotQuickPlay} from "../contracts/DealOrNotQuickPlay.sol";
+import {Bank} from "../contracts/Bank.sol";
+import {SponsorVault} from "../contracts/SponsorVault.sol";
+import {BestOfBanker} from "../contracts/BestOfBanker.sol";
 
 /// @notice Deploy all QuickPlay contracts to Base Sepolia
 /// @dev Run: forge script script/Deploy.s.sol:Deploy --rpc-url $RPC_URL --broadcast --verify

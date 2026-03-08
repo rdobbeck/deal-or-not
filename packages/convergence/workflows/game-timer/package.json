@@ -1,0 +1,18 @@
+{
+  "name": "deal-or-not-game-timer",
+  "version": "0.1.0",
+  "main": "dist/main.js",
+  "private": true,
+  "description": "CRE cron-trigger workflow: scan and expire stale games on QuickPlay and Agents contracts",
+  "scripts": {
+    "postinstall": "bun x cre-setup"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@chainlink/cre-sdk": "^1.1.1",
+    "viem": "^2.34.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.2.21"
+  }
+}

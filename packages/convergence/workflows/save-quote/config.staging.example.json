@@ -1,0 +1,6 @@
+{
+  "contractAddress": "0xYOUR_GAME_CONTRACT",
+  "bestOfBankerAddress": "0xYOUR_BEST_OF_BANKER",
+  "chainSelectorName": "ethereum-testnet-sepolia-base-1",
+  "gasLimit": "300000"
+}

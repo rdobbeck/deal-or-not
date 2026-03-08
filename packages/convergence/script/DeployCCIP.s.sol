@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {DealOrNotBridge} from "../src/DealOrNotBridge.sol";
-import {DealOrNotGateway} from "../src/DealOrNotGateway.sol";
+import {DealOrNotBridge} from "../contracts/DealOrNotBridge.sol";
+import {DealOrNotGateway} from "../contracts/DealOrNotGateway.sol";
 
 /// @notice Deploy DealOrNotBridge on Base Sepolia
 /// @dev Run: DEAL_OR_NOT_ADDRESS=$GAME_CONTRACT forge script script/DeployCCIP.s.sol:DeployBridge --rpc-url $RPC_URL --broadcast --private-key $DEPLOYER_KEY

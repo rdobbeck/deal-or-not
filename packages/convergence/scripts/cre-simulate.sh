@@ -6,6 +6,8 @@
 #   reveal    <TX_HASH> [EVENT_INDEX]  Reveal case value (CaseOpenRequested)
 #   banker    <TX_HASH> [EVENT_INDEX]  AI Banker offer (RoundComplete)
 #   savequote <TX_HASH> [EVENT_INDEX]  Save banker quote to BestOfBanker (BankerMessage)
+#   agent     <TX_HASH> [EVENT_INDEX]  Agent gameplay orchestrator (any DealOrNotAgents event)
+#   timer                               Scan and expire stale games (cron trigger)
 #   support   <GAME_ID> [POLL]         Auto-watch game and trigger workflows
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -13,7 +15,7 @@ source "$SCRIPT_DIR/../script/env.sh"
 
 WORKFLOWS="$PROJECT_DIR/workflows"
 
-CMD="${1:?Usage: cre-simulate.sh <reveal|banker|savequote|support> [args...]}"
+CMD="${1:?Usage: cre-simulate.sh <reveal|banker|savequote|agent|timer|support> [args...]}"
 shift
 
 # ── Generate CRE workflow configs from env vars (never committed) ──
@@ -23,6 +25,8 @@ generate_configs() {
 import json, os
 G = os.environ['GAME_CONTRACT']
 C = 'ethereum-testnet-sepolia-base-1'
+AGENTS = os.environ.get('AGENTS_CONTRACT', '')
+REGISTRY = os.environ.get('AGENT_REGISTRY', '')
 
 configs = {
     'confidential-reveal/config.staging.json': {
@@ -43,6 +47,18 @@ configs = {
         'sponsorJackpotAddress': os.environ['SPONSOR_VAULT'],
         'chainSelectorName': C, 'gasLimit': '300000',
     },
+    'agent-gameplay-orchestrator/config.staging.json': {
+        'contractAddress': AGENTS or G,
+        'agentRegistryAddress': REGISTRY or '0x0000000000000000000000000000000000000000',
+        'chainSelectorName': C, 'gasLimit': '500000',
+        'owner': os.environ.get('DEPLOYER_ADDR', ''),
+    },
+    'game-timer/config.staging.json': {
+        'quickPlayAddress': G,
+        'agentsAddress': AGENTS or '',
+        'chainSelectorName': C, 'gasLimit': '300000',
+        'scanWindow': '5',
+    },
 }
 
 for path, data in configs.items():
@@ -55,7 +71,9 @@ cleanup_configs() {
   rm -f "$WORKFLOWS/confidential-reveal/config.staging.json" \
        "$WORKFLOWS/banker-ai/config.staging.json" \
        "$WORKFLOWS/save-quote/config.staging.json" \
-       "$WORKFLOWS/sponsor-jackpot/config.staging.json"
+       "$WORKFLOWS/sponsor-jackpot/config.staging.json" \
+       "$WORKFLOWS/agent-gameplay-orchestrator/config.staging.json" \
+       "$WORKFLOWS/game-timer/config.staging.json"
 }
 
 cd "$WORKFLOWS"
@@ -153,6 +171,31 @@ run_save_quote() {
     --trigger-index 0 2>&1 || echo "(save-quote skipped — non-critical)"
 }
 
+run_agent() {
+  local tx="$1" event_idx="${2:-0}"
+  echo "Running CRE Agent Gameplay Orchestrator..."
+  echo "  TX:    $tx"
+  echo "  Event: log index $event_idx"
+  cd "$WORKFLOWS"
+  cre workflow simulate ./agent-gameplay-orchestrator \
+    --evm-tx-hash "$tx" \
+    --evm-event-index "$event_idx" \
+    -T staging-settings \
+    --broadcast \
+    --non-interactive \
+    --trigger-index 0
+}
+
+run_timer() {
+  echo "Running CRE Game Timer (cron scan)..."
+  cd "$WORKFLOWS"
+  cre workflow simulate ./game-timer \
+    -T staging-settings \
+    --broadcast \
+    --non-interactive \
+    --trigger-index 0
+}
+
 # ── Commands ──
 
 case "$CMD" in
@@ -172,6 +215,16 @@ case "$CMD" in
     TX_HASH="${1:?Usage: cre-simulate.sh savequote <TX_HASH> [EVENT_INDEX]}"
     EVENT_INDEX="${2:-1}"
     run_save_quote "$TX_HASH" "$EVENT_INDEX"
+    ;;
+
+  agent)
+    TX_HASH="${1:?Usage: cre-simulate.sh agent <TX_HASH> [EVENT_INDEX]}"
+    EVENT_INDEX="${2:-0}"
+    run_agent "$TX_HASH" "$EVENT_INDEX"
+    ;;
+
+  timer)
+    run_timer
     ;;
 
   support)
@@ -281,7 +334,7 @@ case "$CMD" in
 
   *)
     echo "Unknown command: $CMD"
-    echo "Usage: cre-simulate.sh <reveal|banker|savequote|support> [args...]"
+    echo "Usage: cre-simulate.sh <reveal|banker|savequote|agent|timer|support> [args...]"
     exit 1
     ;;
 esac

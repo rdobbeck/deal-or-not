@@ -15,9 +15,15 @@ docs/
 
 # CRE CLI build artifacts
 .cre_build_tmp.js
+.cre_build_tmp/
 bun.lock
 node_modules/
 package-lock.json
 
-# Generated at runtime by cre-simulate.sh
+# Generated at runtime by cre-simulate.sh (never commit)
 config.staging.json
+config.simulate.json
+
+# CRE secrets (never commit — use secrets.yaml.example as template)
+workflows/**/secrets.yaml
+!workflows/**/secrets.yaml.example

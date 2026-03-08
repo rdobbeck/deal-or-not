@@ -178,8 +178,8 @@ contract DealOrNotQuickPlay is VRFManager, IReceiver {
         g.phase = Phase.WaitingForVRF;
         g.entryDeposit = msg.value;
 
-        // Snapshot ETH/USD price for this game
-        g.ethPerDollar = priceFeed.snapshotPrice();
+        // Snapshot ETH/USD price for this game (reject stale feed > 1 hour)
+        g.ethPerDollar = priceFeed.snapshotPriceWithStaleness(3600);
 
         // Forward entry fee to Bank
         bank.receiveEntryFee{value: msg.value}();

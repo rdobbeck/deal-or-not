@@ -6,11 +6,15 @@ The production-grade successor to `prototype/`. Real ETH, real Chainlink VRF, re
 
 Direct links to each Chainlink integration:
 
-- **VRF v2.5**: [`VRFManager.sol`](src/VRFManager.sol) + [`DealOrNotQuickPlay.sol:createGame()`](src/DealOrNotQuickPlay.sol)
+- **VRF v2.5**: [`VRFManager.sol`](contracts/VRFManager.sol) + [`DealOrNotQuickPlay.sol:createGame()`](contracts/DealOrNotQuickPlay.sol)
 - **CRE Confidential Compute**: [`confidential-reveal/main.ts`](workflows/confidential-reveal/main.ts)
 - **CRE + Gemini AI (Confidential HTTP)**: [`banker-ai/main.ts`](workflows/banker-ai/main.ts) + [`banker-ai/gemini.ts`](workflows/banker-ai/gemini.ts)
-- **Price Feeds**: [`PriceFeedHelper.sol`](src/PriceFeedHelper.sol)
-- **CCIP**: [`DealOrNotBridge.sol`](src/DealOrNotBridge.sol) + [`DealOrNotGateway.sol`](src/DealOrNotGateway.sol)
+- **CRE Autonomous Agents**: [`agent-gameplay-orchestrator/main.ts`](workflows/agent-gameplay-orchestrator/main.ts)
+- **CRE Cron Timer**: [`game-timer/main.ts`](workflows/game-timer/main.ts)
+- **Price Feeds**: [`PriceFeedHelper.sol`](contracts/PriceFeedHelper.sol) + [`SharedPriceFeed.sol`](contracts/SharedPriceFeed.sol)
+- **CCIP**: [`DealOrNotBridge.sol`](contracts/DealOrNotBridge.sol) + [`DealOrNotGateway.sol`](contracts/DealOrNotGateway.sol)
+- **Agent Registry + Staking**: [`AgentRegistry.sol`](contracts/AgentRegistry.sol) + [`AgentStaking.sol`](contracts/AgentStaking.sol)
+- **Prediction Markets**: [`PredictionMarket.sol`](contracts/PredictionMarket.sol)
 
 Verify on-chain (no setup needed):
 
@@ -43,7 +47,8 @@ The `prototype/` package proved the concept: 5-case Deal or NOT with VRF randomn
 | `BestOfBanker.sol` | `BestOfBanker.sol` | Same concept, tighter integration |
 | `BankerAlgorithm` (inline) | `BankerAlgorithm.sol` | Standalone library |
 | `GameMath` (inline) | `GameMath.sol` | Standalone library |
-| No tests for banking/math | 4 test files, 47 tests | Full coverage |
+| No agent infra | 6 agent contracts | Registry, Staking, Leaderboard, Markets |
+| No tests for banking/math | 13 test suites, 244 tests | Full coverage |
 
 ## Contracts (Base Sepolia)
 
@@ -62,28 +67,38 @@ The `prototype/` package proved the concept: 5-case Deal or NOT with VRF randomn
 ## Architecture
 
 ```
-Player Action          On-Chain Event              CRE Workflow
---------------         ----------------            ----------------
+Player/Agent Action    On-Chain Event              CRE Workflow
+-------------------    ----------------            ----------------
 createGame()     -->   VRF request                 (Chainlink VRF callback ~10s)
-pickCase()       -->   CaseSelected
+pickCase()       -->   CasePicked
 openCase()       -->   CaseOpenRequested     -->   confidential-reveal (writes value)
                                               -->   sponsor-jackpot (optional)
                        RoundComplete          -->   banker-ai (Gemini offer + message)
                        BankerMessage          -->   save-quote (archives to BestOfBanker)
 accept/reject    -->   DealAccepted/Rejected
 keep/swap        -->   GameOver
+                                                    game-timer (cron: expire stale games)
+
+AGENT FLOW (autonomous):
+createAgentGame()-->   GameCreated             -->  agent-gameplay-orchestrator
+                       VRFSeedReceived         -->    reads game state
+                       CasePicked              -->    calls agent API (Confidential HTTP)
+                       BankerOfferMade         -->    executes agent decision via writeReport
+                       GameResolved            -->    records stats in AgentRegistry
 ```
 
-## CRE Workflows
+## CRE Workflows (6 total)
 
-| Workflow | Trigger Event | What It Does |
+| Workflow | Trigger | What It Does |
 |---|---|---|
-| `confidential-reveal` | `CaseOpenRequested` | Decrypts VRF seed, computes case value, writes to contract |
-| `banker-ai` | `RoundComplete` | Calls Gemini 2.5 Flash for personality offer, writes offer + message |
-| `save-quote` | `BankerMessage` | Archives banker quote to BestOfBanker gallery |
-| `sponsor-jackpot` | `CaseOpenRequested` | Adds jackpot bonus from sponsor funds (optional) |
+| `confidential-reveal` | Log: `CaseOpenRequested` | Fetches CRE entropy via Confidential HTTP, computes case value, writes to contract |
+| `banker-ai` | Log: `RoundComplete` | Calls Gemini 2.5 Flash via Confidential HTTP for personality offer + message |
+| `save-quote` | Log: `BankerMessage` | Archives banker quote to BestOfBanker gallery |
+| `sponsor-jackpot` | Log: `CaseOpenRequested` | Adds jackpot bonus from sponsor funds (optional) |
+| `agent-gameplay-orchestrator` | Log: multiple DealOrNotAgents events | Reads game state, calls agent API via Confidential HTTP, executes agent decision |
+| `game-timer` | Cron: `*/5 * * * *` | Scans QuickPlay + Agents for stale games, calls expireGame() |
 
-All workflows run in CRE simulate mode. Configs are generated at runtime from env vars, never committed.
+All workflows run in CRE simulate mode. Configs are generated at runtime by `cre-simulate.sh`, never committed.
 
 ## Playing a Game
 
@@ -166,7 +181,7 @@ bash scripts/cre-simulate.sh support <GID>
 ### Install Workflow Dependencies
 
 ```bash
-for wf in workflows/confidential-reveal workflows/banker-ai workflows/save-quote workflows/sponsor-jackpot; do
+for wf in workflows/confidential-reveal workflows/banker-ai workflows/save-quote workflows/sponsor-jackpot workflows/agent-gameplay-orchestrator workflows/game-timer; do
   (cd "$wf" && bun install)
 done
 ```
@@ -188,38 +203,80 @@ Without a Gemini key, the banker-ai workflow still computes offers but uses a fa
 ## Tests
 
 ```bash
-forge test
+forge test          # all 244 tests
+forge test --summary  # table view
 ```
 
-47 tests across 4 files:
-- `Bank.t.sol`: deposit, withdraw, sweeten, entry fee math
-- `SponsorVault.t.sol`: register, sponsor, jackpot, claim
-- `PriceFeedHelper.t.sol`: ETH/USD conversion
-- `DealOrNotQuickPlay.t.sol`: full game flow with mock VRF
+244 tests across 13 suites:
+
+| Suite | Tests |
+|---|---|
+| AgentRegistry | 33 |
+| AgentStaking | 26 |
+| Bank | 14 |
+| DealOrNotAgents | 30 |
+| DealOrNotBridge | 8 |
+| DealOrNotGateway | 10 |
+| DealOrNotQuickPlay | 12 |
+| PredictionMarket | 14 |
+| PredictionMarketPayout | 15 |
+| PriceFeedHelper | 11 |
+| SeasonalLeaderboard | 28 |
+| SharedPriceFeed | 33 |
+| SponsorVault | 10 |
 
 ## Deploying Fresh
 
 ```bash
 source script/env.sh
 
-# Deploy all contracts
-forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast --private-key $DEPLOYER_KEY
+# Deploy core contracts (Bank, QuickPlay, SponsorVault, BestOfBanker)
+CRE_FORWARDER=0x82300bd7c3958625581cc2F77bC6464dcEcDF3e5 \
+  forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast --private-key $DEPLOYER_KEY
 
-# Set CRE forwarder on game contract (critical!)
-cast send <NEW_GAME_ADDRESS> "setForwarder(address)" 0x82300bd7c3958625581cc2F77bC6464dcEcDF3e5 \
-  --private-key $DEPLOYER_KEY --rpc-url $RPC_URL
+# Deploy agent infrastructure (Registry, DealOrNotAgents, Staking, Leaderboard, Markets, SharedPriceFeed)
+BANK_ADDRESS=<bank> CRE_FORWARDER=0x82300bd7c3958625581cc2F77bC6464dcEcDF3e5 \
+  forge script script/DeployAgentInfra.s.sol --rpc-url $RPC_URL --broadcast --private-key $DEPLOYER_KEY
 
-# Update addresses in script/env.sh
-# Fund the bank
+# Deploy CCIP bridge + gateway
+DEAL_OR_NOT_ADDRESS=<game> \
+  forge script script/DeployCCIP.s.sol:DeployBridge --rpc-url $RPC_URL --broadcast --private-key $DEPLOYER_KEY
+
+# Update addresses in script/env.sh, fund the bank
 bash scripts/play-game.sh sweeten 0.01ether
 ```
 
-## Migration from Prototype
+## CRE Simulate Commands
 
-This package is the home of the hackathon project going forward. As we validate each piece in convergence, functions migrate from `prototype/`:
+The `cre-simulate.sh` script generates configs from env vars at runtime and runs CRE workflows:
 
-- Game logic: migrated, rewritten as QuickPlay + libraries
-- Bank: new standalone contract (prototype had inline banking)
-- CRE workflows: migrated, configs now generated at runtime
-- Frontend: still in `prototype/frontend/` for now (or `packages/nextjs/`)
-- CCIP bridge: `DealOrNotGateway` + `DealOrNotBridge`, deployed March 7 on ETH Sepolia + Base Sepolia
+```bash
+# Reveal a case value (after openCase tx)
+bash scripts/cre-simulate.sh reveal <TX_HASH> [EVENT_INDEX]
+
+# AI Banker offer (after round complete)
+bash scripts/cre-simulate.sh banker <TX_HASH> [EVENT_INDEX]
+
+# Save banker quote to gallery
+bash scripts/cre-simulate.sh savequote <TX_HASH> [EVENT_INDEX]
+
+# Agent gameplay orchestrator (DealOrNotAgents events)
+bash scripts/cre-simulate.sh agent <TX_HASH> [EVENT_INDEX]
+
+# Expire stale games (cron trigger)
+bash scripts/cre-simulate.sh timer
+
+# Auto-watch: polls game state, triggers workflows automatically
+bash scripts/cre-simulate.sh support <GAME_ID> [POLL_INTERVAL]
+```
+
+## Contracts: 16 Total
+
+**Core (4):** DealOrNotQuickPlay, Bank, SponsorVault, BestOfBanker
+**Libraries (4):** VRFManager, PriceFeedHelper, BankerAlgorithm, GameMath
+**CCIP (2):** DealOrNotBridge, DealOrNotGateway
+**Agent Infra (6):** AgentRegistry, AgentStaking, DealOrNotAgents, SeasonalLeaderboard, PredictionMarket, SharedPriceFeed
+
+## Frontend
+
+The `dealornot/` directory contains a Next.js 16 frontend with 13 pages, entry fee hooks, and convergence contract addresses. See [`dealornot/README.md`](dealornot/README.md) for setup.

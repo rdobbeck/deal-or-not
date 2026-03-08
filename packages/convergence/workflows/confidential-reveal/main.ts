@@ -194,6 +194,7 @@ const onCaseOpenRequested = (runtime: Runtime<Config>, log: EVMLog): string => {
         url: entropyUrl,
         method: "GET",
       },
+      encryptOutput: true,
       vaultDonSecrets: [],
     })
     .result();

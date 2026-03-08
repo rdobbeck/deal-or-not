@@ -17,8 +17,9 @@ library PriceFeedHelper {
     /// @param feed The Chainlink ETH/USD price feed
     /// @param usdCents Amount in USD cents (e.g., 25 = $0.25)
     function usdToWei(AggregatorV3Interface feed, uint256 usdCents) internal view returns (uint256) {
-        (, int256 ethUsdPrice,,,) = feed.latestRoundData();
+        (, int256 ethUsdPrice,, uint256 updatedAt,) = feed.latestRoundData();
         if (ethUsdPrice <= 0) revert PriceNotPositive();
+        if (block.timestamp - updatedAt > 3600) revert StalePriceFeed();
         return (usdCents * 1e24) / uint256(ethUsdPrice);
     }
 
@@ -26,16 +27,17 @@ library PriceFeedHelper {
     /// @param feed The Chainlink ETH/USD price feed
     /// @param weiAmount Amount in wei
     function weiToUsd(AggregatorV3Interface feed, uint256 weiAmount) internal view returns (uint256) {
-        (, int256 ethUsdPrice,,,) = feed.latestRoundData();
+        (, int256 ethUsdPrice,, uint256 updatedAt,) = feed.latestRoundData();
         if (ethUsdPrice <= 0) revert PriceNotPositive();
-        // Inverse of usdToWei: cents = weiAmount * ethUsdPrice / 1e24
+        if (block.timestamp - updatedAt > 3600) revert StalePriceFeed();
         return (weiAmount * uint256(ethUsdPrice)) / 1e24;
     }
 
     /// @notice Get the current ETH/USD price (8 decimals).
     function getEthUsdPrice(AggregatorV3Interface feed) internal view returns (uint256) {
-        (, int256 ethUsdPrice,,,) = feed.latestRoundData();
+        (, int256 ethUsdPrice,, uint256 updatedAt,) = feed.latestRoundData();
         if (ethUsdPrice <= 0) revert PriceNotPositive();
+        if (block.timestamp - updatedAt > 3600) revert StalePriceFeed();
         return uint256(ethUsdPrice);
     }
 

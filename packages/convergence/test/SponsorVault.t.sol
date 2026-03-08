@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {SponsorVault} from "../src/SponsorVault.sol";
+import {SponsorVault} from "../contracts/SponsorVault.sol";
 
 /// @dev Mock game contract that returns controlled game state
 contract MockGameContract {

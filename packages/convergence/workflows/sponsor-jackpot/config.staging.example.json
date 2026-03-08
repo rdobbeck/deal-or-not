@@ -1,0 +1,6 @@
+{
+  "contractAddress": "0xYOUR_GAME_CONTRACT",
+  "sponsorJackpotAddress": "0xYOUR_SPONSOR_VAULT",
+  "chainSelectorName": "ethereum-testnet-sepolia-base-1",
+  "gasLimit": "300000"
+}

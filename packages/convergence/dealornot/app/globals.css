@@ -1,0 +1,399 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: #030712;
+    --foreground: #f3f4f6;
+    --gold: #FFD700;
+    --gold-dark: #B8860B;
+    --gold-light: #FFF8DC;
+    --terminal-green: #39FF14;
+    --terminal-green-dim: #1a8a0e;
+    --signal-cyan: #00F0FF;
+    --broadcast-red: #FF1744;
+    --chain-blue: #0052FF;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-geist-mono), monospace;
+  }
+
+  /* ══════════════════════════════════════════════
+     GAME SHOW KEYFRAMES
+     ══════════════════════════════════════════════ */
+
+  @keyframes gold-shimmer {
+    0%, 100% { background-position: 200% 0; }
+    50% { background-position: -200% 0; }
+  }
+
+  @keyframes gold-border-pulse {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.2), 0 0 20px rgba(255, 215, 0, 0.1);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(255, 215, 0, 0.2), 0 0 60px rgba(255, 215, 0, 0.1);
+    }
+  }
+
+  @keyframes sparkle-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes slam-in {
+    0% { transform: scale(3) rotate(-5deg); opacity: 0; }
+    60% { transform: scale(0.95) rotate(1deg); opacity: 1; }
+    80% { transform: scale(1.02) rotate(-0.5deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+
+  @keyframes neon-flicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+      text-shadow: 0 0 7px rgba(255,215,0,0.6), 0 0 10px rgba(255,215,0,0.4), 0 0 21px rgba(255,215,0,0.2);
+    }
+    20%, 24%, 55% {
+      text-shadow: none;
+    }
+  }
+
+  /* ══════════════════════════════════════════════
+     BROADCAST HIJACK — CRT / GLITCH / TERMINAL
+     ══════════════════════════════════════════════ */
+
+  @keyframes scanline-drift {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+
+  @keyframes glitch-shift {
+    0%, 100% { clip-path: inset(0 0 0 0); transform: translateX(0); }
+    20% { clip-path: inset(15% 0 65% 0); transform: translateX(-3px); }
+    40% { clip-path: inset(60% 0 10% 0); transform: translateX(3px); }
+    60% { clip-path: inset(30% 0 40% 0); transform: translateX(-2px); }
+    80% { clip-path: inset(80% 0 5% 0); transform: translateX(2px); }
+  }
+
+  @keyframes glitch-color {
+    0%, 100% { text-shadow: none; }
+    25% { text-shadow: -2px 0 #ff00de, 2px 0 #00f0ff; }
+    50% { text-shadow: 2px 0 #ff00de, -2px 0 #00f0ff; }
+    75% { text-shadow: -1px 0 #39ff14, 1px 0 #ff1744; }
+  }
+
+  @keyframes blink-cursor {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+
+  @keyframes live-pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--broadcast-red); }
+    50% { opacity: 0.4; box-shadow: 0 0 12px var(--broadcast-red); }
+  }
+
+  @keyframes signal-bars {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes data-stream {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 -200px; }
+  }
+
+  @keyframes bridge-flow {
+    0% { transform: translateX(-100%); opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateX(100%); opacity: 0; }
+  }
+
+  @keyframes noise-scroll {
+    0% { transform: translate(0, 0); }
+    10% { transform: translate(-5%, -5%); }
+    20% { transform: translate(-10%, 5%); }
+    30% { transform: translate(5%, -10%); }
+    40% { transform: translate(-5%, 15%); }
+    50% { transform: translate(-10%, 5%); }
+    60% { transform: translate(15%, 0); }
+    70% { transform: translate(0, 10%); }
+    80% { transform: translate(-15%, 0); }
+    90% { transform: translate(10%, 5%); }
+    100% { transform: translate(5%, 0); }
+  }
+}
+
+@layer components {
+  /* ══════════════════════════════════════════════
+     GAME SHOW ENERGY
+     ══════════════════════════════════════════════ */
+
+  /* Gold shimmer text effect */
+  .gold-text {
+    background: linear-gradient(
+      90deg,
+      #B8860B 0%,
+      #FFD700 25%,
+      #FFF8DC 50%,
+      #FFD700 75%,
+      #B8860B 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gold-shimmer 3s ease-in-out infinite;
+  }
+
+  /* Dramatic gold border glow */
+  .gold-glow {
+    box-shadow:
+      0 0 20px rgba(255, 215, 0, 0.3),
+      0 0 40px rgba(255, 215, 0, 0.1),
+      inset 0 1px 0 rgba(255, 215, 0, 0.2);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+  }
+
+  /* Pulsing gold border for CTAs */
+  .gold-pulse {
+    animation: gold-border-pulse 2s ease-in-out infinite;
+  }
+
+  /* Sparkle overlay animation */
+  .sparkle {
+    position: relative;
+    overflow: hidden;
+  }
+  .sparkle::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse, rgba(255,215,0,0.15) 0%, transparent 60%);
+    animation: sparkle-rotate 6s linear infinite;
+    pointer-events: none;
+  }
+
+  /* Scrolling ticker tape */
+  .ticker {
+    display: flex;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .ticker-inner {
+    display: flex;
+    animation: ticker-scroll 30s linear infinite;
+  }
+
+  /* Halftone dot pattern (like the MSN game) */
+  .halftone-bg {
+    background-image: radial-gradient(circle, rgba(255,215,0,0.08) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+
+  /* Stage spotlight effect */
+  .spotlight {
+    background: radial-gradient(
+      ellipse at 50% 0%,
+      rgba(255, 215, 0, 0.08) 0%,
+      transparent 60%
+    );
+  }
+
+  /* Dramatic entrance animation */
+  .slam-in {
+    animation: slam-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  /* Neon flicker for emphasis */
+  .neon-gold {
+    animation: neon-flicker 4s ease-in-out infinite;
+    color: #FFD700;
+  }
+
+  /* ══════════════════════════════════════════════
+     BROADCAST HIJACK COMPONENTS
+     ══════════════════════════════════════════════ */
+
+  /* CRT scan line overlay — apply to any container */
+  .crt-overlay {
+    position: relative;
+  }
+  .crt-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.08) 2px,
+      rgba(0, 0, 0, 0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  /* Subtle CRT vignette for the whole page */
+  .crt-vignette::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at 50% 50%,
+      transparent 60%,
+      rgba(0, 0, 0, 0.4) 100%
+    );
+    pointer-events: none;
+    z-index: 40;
+  }
+
+  /* Film grain noise overlay */
+  .noise-overlay::after {
+    content: '';
+    position: fixed;
+    inset: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    animation: noise-scroll 8s steps(10) infinite;
+    pointer-events: none;
+    z-index: 41;
+    opacity: 0.4;
+  }
+
+  /* Glitch text effect — use on headings for dystopian feel */
+  .glitch-text {
+    position: relative;
+  }
+  .glitch-text:hover {
+    animation: glitch-color 0.3s ease-in-out;
+  }
+
+  /* Terminal green text */
+  .terminal-text {
+    color: var(--terminal-green);
+    text-shadow: 0 0 8px rgba(57, 255, 20, 0.4);
+    font-family: var(--font-geist-mono), monospace;
+  }
+
+  /* Dim terminal text for secondary info */
+  .terminal-dim {
+    color: var(--terminal-green-dim);
+    text-shadow: 0 0 4px rgba(57, 255, 20, 0.15);
+  }
+
+  /* Cyan signal/data text */
+  .signal-text {
+    color: var(--signal-cyan);
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+  }
+
+  /* LIVE ON CHAIN indicator */
+  .broadcast-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--broadcast-red);
+  }
+  .broadcast-live::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--broadcast-red);
+    animation: live-pulse 1.5s ease-in-out infinite;
+  }
+
+  /* Signal strength bars for chain connection */
+  .signal-bars {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 1px;
+    height: 12px;
+  }
+  .signal-bars .bar {
+    width: 3px;
+    background: var(--terminal-green);
+    border-radius: 1px;
+    transition: opacity 0.3s;
+  }
+  .signal-bars .bar:nth-child(1) { height: 4px; }
+  .signal-bars .bar:nth-child(2) { height: 7px; animation: signal-bars 2s ease-in-out 0.2s infinite; }
+  .signal-bars .bar:nth-child(3) { height: 10px; animation: signal-bars 2s ease-in-out 0.4s infinite; }
+  .signal-bars .bar:nth-child(4) { height: 12px; animation: signal-bars 2s ease-in-out 0.6s infinite; }
+
+  /* Animated data stream (vertical) for bridge visualization */
+  .data-stream {
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 8px,
+      rgba(0, 240, 255, 0.15) 8px,
+      rgba(0, 240, 255, 0.15) 10px
+    );
+    background-size: 100% 200px;
+    animation: data-stream 2s linear infinite;
+  }
+
+  /* Bridge flow packets */
+  .bridge-packet {
+    animation: bridge-flow 2s ease-in-out infinite;
+  }
+
+  /* Blinking cursor */
+  .cursor-blink::after {
+    content: '_';
+    animation: blink-cursor 1s step-end infinite;
+    color: var(--terminal-green);
+  }
+
+  /* Hex address styling */
+  .hex-addr {
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    color: var(--terminal-green);
+    text-shadow: 0 0 6px rgba(57, 255, 20, 0.3);
+  }
+
+  /* Chain badge styling */
+  .chain-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid;
+    backdrop-filter: blur(8px);
+  }
+  .chain-badge-base {
+    color: #4da3ff;
+    border-color: rgba(0, 82, 255, 0.4);
+    background: rgba(0, 82, 255, 0.1);
+    text-shadow: 0 0 8px rgba(0, 82, 255, 0.3);
+  }
+  .chain-badge-eth {
+    color: #a5b4fc;
+    border-color: rgba(98, 126, 234, 0.4);
+    background: rgba(98, 126, 234, 0.1);
+    text-shadow: 0 0 8px rgba(98, 126, 234, 0.3);
+  }
+}

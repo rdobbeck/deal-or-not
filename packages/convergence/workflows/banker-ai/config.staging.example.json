@@ -1,0 +1,7 @@
+{
+  "contractAddress": "0xYOUR_GAME_CONTRACT",
+  "chainSelectorName": "ethereum-testnet-sepolia-base-1",
+  "gasLimit": "500000",
+  "geminiModel": "gemini-2.5-flash",
+  "geminiApiKey": "YOUR_GEMINI_API_KEY"
+}

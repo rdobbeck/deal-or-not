@@ -127,6 +127,7 @@ export function callGemini(
             "x-goog-api-key": { values: [runtime.config.geminiApiKey || "{{.geminiApiKey}}"] },
           },
         },
+        encryptOutput: true,
         vaultDonSecrets: [
           { key: "geminiApiKey", owner: runtime.config.owner || "" },
         ],

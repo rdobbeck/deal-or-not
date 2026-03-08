@@ -1,0 +1,95 @@
+export const BEST_OF_BANKER_ABI = [
+  {
+    type: "function",
+    name: "getLatestMessage",
+    inputs: [{ name: "gameId", type: "uint256" }],
+    outputs: [{ name: "", type: "string" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getQuote",
+    inputs: [{ name: "quoteId", type: "uint256" }],
+    outputs: [
+      { name: "gameId", type: "uint256" },
+      { name: "round", type: "uint8" },
+      { name: "message", type: "string" },
+      { name: "upvotes", type: "uint256" },
+      { name: "timestamp", type: "uint256" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getTopQuotes",
+    inputs: [{ name: "count", type: "uint256" }],
+    outputs: [
+      { name: "ids", type: "uint256[]" },
+      { name: "gameIds", type: "uint256[]" },
+      { name: "messages", type: "string[]" },
+      { name: "upvoteCounts", type: "uint256[]" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "quoteCount",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "upvoteCostWei",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "upvote",
+    inputs: [{ name: "quoteId", type: "uint256" }],
+    outputs: [],
+    stateMutability: "payable",
+  },
+  {
+    type: "function",
+    name: "hasUpvoted",
+    inputs: [
+      { name: "", type: "uint256" },
+      { name: "", type: "address" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "saveQuote",
+    inputs: [
+      { name: "gameId", type: "uint256" },
+      { name: "round", type: "uint8" },
+      { name: "message", type: "string" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "event",
+    name: "QuoteSaved",
+    inputs: [
+      { name: "quoteId", type: "uint256", indexed: true },
+      { name: "gameId", type: "uint256", indexed: true },
+      { name: "round", type: "uint8", indexed: false },
+      { name: "message", type: "string", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "QuoteUpvoted",
+    inputs: [
+      { name: "quoteId", type: "uint256", indexed: true },
+      { name: "voter", type: "address", indexed: true },
+      { name: "newTotal", type: "uint256", indexed: false },
+    ],
+  },
+] as const;

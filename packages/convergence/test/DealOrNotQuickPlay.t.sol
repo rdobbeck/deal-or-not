@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {DealOrNotQuickPlay} from "../src/DealOrNotQuickPlay.sol";
-import {Bank} from "../src/Bank.sol";
+import {DealOrNotQuickPlay} from "../contracts/DealOrNotQuickPlay.sol";
+import {Bank} from "../contracts/Bank.sol";
 import {VRFCoordinatorV2_5Mock} from "@chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
 
 contract MockPriceFeed {

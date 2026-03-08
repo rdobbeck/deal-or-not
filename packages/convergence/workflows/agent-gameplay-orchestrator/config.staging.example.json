@@ -1,0 +1,7 @@
+{
+  "contractAddress": "0xYOUR_AGENTS_CONTRACT",
+  "agentRegistryAddress": "0xYOUR_AGENT_REGISTRY",
+  "chainSelectorName": "ethereum-testnet-sepolia-base-1",
+  "gasLimit": "500000",
+  "owner": "0xYOUR_DEPLOYER_ADDRESS"
+}
