@@ -267,8 +267,8 @@ function handleAgentTurn(
           "Content-Type": { values: ["application/json"] },
         },
         bodyString: JSON.stringify(decisionRequest),
+        encryptOutput: true,
       },
-      // encryptOutput: true, // TODO: restore when CRE CLI v1.3.0 regression is fixed (works in v1.2.0)
       vaultDonSecrets: [],
     })
     .result();

@@ -126,8 +126,8 @@ export function callGemini(
             "Content-Type": { values: ["application/json"] },
             "x-goog-api-key": { values: [runtime.config.geminiApiKey || "{{.geminiApiKey}}"] },
           },
+          encryptOutput: true,
         },
-        // encryptOutput: true, // TODO: restore when CRE CLI v1.3.0 regression is fixed (works in v1.2.0)
         vaultDonSecrets: [
           { key: "geminiApiKey", owner: runtime.config.owner || "" },
         ],
