@@ -1,0 +1,16 @@
+{
+  "name": "deal-or-not-agent-server",
+  "version": "3.0.0",
+  "description": "Multi-strategy autonomous agent server for Deal or NOT",
+  "main": "index.ts",
+  "scripts": {
+    "start": "bun run index.ts",
+    "dev": "bun run --watch index.ts"
+  },
+  "keywords": ["dealornot", "agent", "chainlink", "cre"],
+  "author": "Deal or NOT Team",
+  "license": "MIT",
+  "devDependencies": {
+    "bun-types": "latest"
+  }
+}
