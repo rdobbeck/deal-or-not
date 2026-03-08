@@ -16,7 +16,8 @@ const DEFAULT_EARNINGS_TARGET = 2500; // $25.00 target (in cents)
 
 // ABIs
 const AGENT_REGISTRY_ABI = [
-  parseAbiItem("function getAgentByPlayer(address) view returns (uint256 agentId, string name, string endpoint, uint256 totalGames, uint256 totalWinnings, uint256 avgScore, uint256 registeredAt, bool active)"),
+  parseAbiItem("function getAgentId(address) view returns (uint256)"),
+  parseAbiItem("function getAgent(uint256) view returns (address owner, string name, string apiEndpoint, string metadata, uint256 gamesPlayed, uint256 gamesWon, uint256 totalEarnings, uint256 registeredAt, bool isBanned, bool isActive)"),
   parseAbiItem("function isAgentEligible(address) view returns (bool)"),
 ] as const;
 
@@ -82,34 +83,23 @@ export default async function handler(event: GameCreatedEvent) {
   // Step 2: Fetch agent details
   // ──────────────────────────────────────────────────────────────────────────
 
-  const agentData = await client.readContract({
+  const agentId = await client.readContract({
     address: AGENT_REGISTRY_ADDRESS,
     abi: AGENT_REGISTRY_ABI,
-    functionName: "getAgentByPlayer",
+    functionName: "getAgentId",
     args: [event.player],
   });
 
-  const agentId = agentData[0];
-  const agentName = agentData[1];
-
-  console.log(`[Market Creator] Agent: #${agentId} "${agentName}"`);
+  console.log(`[Market Creator] Agent ID: ${agentId} (player: ${event.player})`);
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Step 3: Fetch game details to get creation time
+  // Step 3: Calculate lock time (use current timestamp + 1 hour)
   // ──────────────────────────────────────────────────────────────────────────
 
-  const gameData = await client.readContract({
-    address: DEAL_OR_NOT_ADDRESS,
-    abi: DEAL_OR_NOT_ABI,
-    functionName: "getGame",
-    args: [event.gameId],
-  });
-
-  const createdAt = gameData[17]; // gameData.createdAt
+  const createdAt = BigInt(Math.floor(Date.now() / 1000));
   const lockTime = createdAt + BigInt(LOCK_TIME_OFFSET);
 
-  console.log(`[Market Creator] Game created at: ${new Date(Number(createdAt) * 1000).toISOString()}`);
-  console.log(`[Market Creator] Markets will lock at: ${new Date(Number(lockTime) * 1000).toISOString()}`);
+  console.log(`[Market Creator] Lock time set to: ${new Date(Number(lockTime) * 1000).toISOString()}`);
 
   // ──────────────────────────────────────────────────────────────────────────
   // Step 4: Define markets to create
@@ -160,7 +150,7 @@ export default async function handler(event: GameCreatedEvent) {
   }));
 
   console.log(`[Market Creator] ✓ Ready to create ${reports.length} markets`);
-  console.log(`[Market Creator] Markets:`, JSON.stringify(marketsToCreate, null, 2));
+  console.log(`[Market Creator] Markets:`, JSON.stringify(marketsToCreate, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2));
 
   // Return the first market for now (CRE limitation: one writeReport per workflow)
   // TODO: Enhance to support multiple writeReports or call createMarket in a loop
@@ -170,7 +160,6 @@ export default async function handler(event: GameCreatedEvent) {
     success: true,
     gameId: Number(event.gameId),
     agentId: Number(agentId),
-    agentName,
     marketsCreated: marketsToCreate.length,
     // CRE writeReport expects these fields
     reportData: {
@@ -188,14 +177,14 @@ export default async function handler(event: GameCreatedEvent) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 if (import.meta.main) {
-  // Example test event
+  // Example test event using real agent
   const testEvent: GameCreatedEvent = {
-    gameId: 1n,
+    gameId: 999n, // Test game ID
     host: "0x75a32D24fd4EDB2C5895aCE905dA5Ee1fBD584A1" as Address,
-    player: "0xC96Bcb1EACE35d09189a6e52758255b8951a7587" as Address, // Replace with agent address
+    player: "0x75a32D24fd4EDB2C5895aCE905dA5Ee1fBD584A1" as Address, // Real agent address
   };
 
   console.log("Testing market creator workflow locally...\n");
   const result = await handler(testEvent);
-  console.log("\nResult:", JSON.stringify(result, null, 2));
+  console.log("\nResult:", JSON.stringify(result, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2));
 }
