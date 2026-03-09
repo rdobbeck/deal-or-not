@@ -12,7 +12,6 @@ const PREDICTION_MARKET_ADDRESS = "0x8606Ed23CBa4903e10F26Bc756E70d867dEDDcC4" a
 
 // Market configuration constants
 const LOCK_TIME_OFFSET = 3600; // Lock betting 1 hour after game creation
-const DEFAULT_EARNINGS_TARGET = 2500; // $25.00 target (in cents)
 
 // ABIs
 const AGENT_REGISTRY_ABI = [
@@ -105,6 +104,8 @@ export default async function handler(event: GameCreatedEvent) {
   // Step 4: Define markets to create
   // ──────────────────────────────────────────────────────────────────────────
 
+  // Create single prediction market: "Will agent win anything?"
+  // Resolves to TRUE if finalPayout > 0, FALSE otherwise
   const marketsToCreate: MarketToCreate[] = [
     {
       gameId: event.gameId,
@@ -113,23 +114,9 @@ export default async function handler(event: GameCreatedEvent) {
       targetValue: 0n,
       lockTime,
     },
-    {
-      gameId: event.gameId,
-      agentId,
-      marketType: MarketType.EarningsOver,
-      targetValue: BigInt(DEFAULT_EARNINGS_TARGET), // $25.00
-      lockTime,
-    },
-    {
-      gameId: event.gameId,
-      agentId,
-      marketType: MarketType.WillAcceptOffer,
-      targetValue: 0n,
-      lockTime,
-    },
   ];
 
-  console.log(`[Market Creator] Creating ${marketsToCreate.length} prediction markets...`);
+  console.log(`[Market Creator] Creating prediction market: "Will agent win anything?" (finalPayout > 0)`);
 
   // ──────────────────────────────────────────────────────────────────────────
   // Step 5: Return market creation data for CRE writeReport
