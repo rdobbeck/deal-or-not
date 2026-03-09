@@ -15,7 +15,7 @@ export const CHAIN_CONTRACTS = {
     dealOrNotAgents: "0x12e23ff7954c62ae18959c5fd4aed6b51ebcd627" as `0x${string}`,
     agentStaking: "0xd46eba96e29e83952ec0ef74eed3c7eb1a4ba6b4" as `0x${string}`,
     seasonalLeaderboard: "0x13c3c750ed19c935567dcb54ee4e88ff6789001a" as `0x${string}`,
-    predictionMarket: "0x05408be7468d01852002156a1b380e3953a502ee" as `0x${string}`,
+    predictionMarket: "0x1B995CC591Ec168df03339Fae74B0752Aa1259d8" as `0x${string}`,
     sharedPriceFeed: "0x91d8104e6e138607c00dd0bc132e1291a641c36d" as `0x${string}`,
   },
   [sepolia.id]: {

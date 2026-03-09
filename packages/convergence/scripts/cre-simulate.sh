@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CRE Simulate — single script for all CRE workflows
-# Usage: ./scripts/cre-simulate.sh <reveal|banker|savequote|jackpot|agent|timer|support> [args...]
+# Usage: ./scripts/cre-simulate.sh <reveal|banker|savequote|jackpot|agent|timer|market|support> [args...]
 #
 # Commands:
 #   reveal    <TX_HASH> [EVENT_INDEX]  Reveal case value (CaseOpenRequested)
@@ -8,6 +8,7 @@
 #   savequote <TX_HASH> [EVENT_INDEX]  Save banker quote to BestOfBanker (BankerMessage)
 #   jackpot   <TX_HASH> [EVENT_INDEX]  Sponsor jackpot accumulation (CaseOpenRequested)
 #   agent     <TX_HASH> [EVENT_INDEX]  Agent gameplay orchestrator (any DealOrNotAgents event)
+#   market    <TX_HASH> [EVENT_INDEX]  Create prediction markets (GameCreated from Agents)
 #   timer                               Scan and expire stale games (cron trigger)
 #   support   <GAME_ID> [POLL]         Auto-watch game and trigger workflows
 set -e
@@ -16,7 +17,7 @@ source "$SCRIPT_DIR/../script/env.sh"
 
 WORKFLOWS="$PROJECT_DIR/workflows"
 
-CMD="${1:?Usage: cre-simulate.sh <reveal|banker|savequote|jackpot|agent|timer|support> [args...]}"
+CMD="${1:?Usage: cre-simulate.sh <reveal|banker|savequote|jackpot|agent|market|timer|support> [args...]}"
 shift
 
 # ── Generate CRE workflow configs from env vars (never committed) ──
@@ -60,6 +61,13 @@ configs = {
         'chainSelectorName': C, 'gasLimit': '300000',
         'scanWindow': '5',
     },
+    'market-creator/config.staging.json': {
+        'contractAddress': AGENTS or G,
+        'predictionMarketAddress': os.environ.get('PREDICTION_MARKET', ''),
+        'chainSelectorName': C, 'gasLimit': '500000',
+        'lockTimeOffset': '3600',
+        'earningsTargetCents': '50',
+    },
 }
 
 for path, data in configs.items():
@@ -74,7 +82,8 @@ cleanup_configs() {
        "$WORKFLOWS/save-quote/config.staging.json" \
        "$WORKFLOWS/sponsor-jackpot/config.staging.json" \
        "$WORKFLOWS/agent-gameplay-orchestrator/config.staging.json" \
-       "$WORKFLOWS/game-timer/config.staging.json"
+       "$WORKFLOWS/game-timer/config.staging.json" \
+       "$WORKFLOWS/market-creator/config.staging.json"
 }
 
 cd "$WORKFLOWS"
@@ -196,6 +205,21 @@ run_agent() {
     --trigger-index 0
 }
 
+run_market() {
+  local tx="$1" event_idx="${2:-0}"
+  echo "Running CRE Market Creator..."
+  echo "  TX:    $tx"
+  echo "  Event: log index $event_idx (GameCreated)"
+  cd "$WORKFLOWS"
+  cre workflow simulate ./market-creator \
+    --evm-tx-hash "$tx" \
+    --evm-event-index "$event_idx" \
+    -T staging-settings \
+    --broadcast \
+    --non-interactive \
+    --trigger-index 0
+}
+
 run_timer() {
   echo "Running CRE Game Timer (cron scan)..."
   cd "$WORKFLOWS"
@@ -240,6 +264,15 @@ case "$CMD" in
     TX_HASH="${1:?Usage: cre-simulate.sh agent <TX_HASH> [EVENT_INDEX]}"
     EVENT_INDEX="${2:-0}"
     run_agent "$TX_HASH" "$EVENT_INDEX"
+    ;;
+
+  market)
+    TX_HASH="${1:?Usage: cre-simulate.sh market <TX_HASH> [EVENT_INDEX]}"
+    EVENT_INDEX="${2:-0}"
+    echo "Running CRE Market Creator..."
+    echo "  TX:    $TX_HASH"
+    echo "  Event: log index $EVENT_INDEX (GameCreated)"
+    run_market "$TX_HASH" "$EVENT_INDEX"
     ;;
 
   timer)
@@ -353,7 +386,7 @@ case "$CMD" in
 
   *)
     echo "Unknown command: $CMD"
-    echo "Usage: cre-simulate.sh <reveal|banker|savequote|jackpot|agent|timer|support> [args...]"
+    echo "Usage: cre-simulate.sh <reveal|banker|savequote|jackpot|agent|market|timer|support> [args...]"
     exit 1
     ;;
 esac

@@ -137,7 +137,7 @@ contract PredictionMarket {
         MarketType marketType,
         uint256 targetValue,
         uint256 lockTime
-    ) external onlyAuthorized returns (uint256 marketId) {
+    ) public onlyAuthorized returns (uint256 marketId) {
         marketId = nextMarketId++;
 
         markets[marketId] = Market({
@@ -157,6 +157,22 @@ contract PredictionMarket {
         gameMarkets[gameId].push(marketId);
 
         emit MarketCreated(marketId, gameId, marketType, targetValue);
+    }
+
+    /// @notice Batch-create multiple prediction markets in one transaction
+    /// @dev Used by CRE workflows (one writeReport per workflow execution)
+    function createMarketBatch(
+        uint256 gameId,
+        uint256 agentId,
+        MarketType[] calldata marketTypes,
+        uint256[] calldata targetValues,
+        uint256 lockTime
+    ) external onlyAuthorized returns (uint256[] memory marketIds) {
+        require(marketTypes.length == targetValues.length, "Length mismatch");
+        marketIds = new uint256[](marketTypes.length);
+        for (uint256 i = 0; i < marketTypes.length; i++) {
+            marketIds[i] = createMarket(gameId, agentId, marketTypes[i], targetValues[i], lockTime);
+        }
     }
 
     // ── Betting ──

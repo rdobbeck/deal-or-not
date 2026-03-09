@@ -59,6 +59,42 @@ contract PredictionMarketTest is PredictionMarketTestBase {
         assertEq(gameMarkets.length, 4);
     }
 
+    function test_CreateMarketBatch() public {
+        PredictionMarket.MarketType[] memory types = new PredictionMarket.MarketType[](3);
+        types[0] = PredictionMarket.MarketType.WillWin;
+        types[1] = PredictionMarket.MarketType.EarningsOver;
+        types[2] = PredictionMarket.MarketType.WillAcceptOffer;
+
+        uint256[] memory targets = new uint256[](3);
+        targets[0] = 0;
+        targets[1] = 50;
+        targets[2] = 0;
+
+        vm.prank(resolver);
+        uint256[] memory ids = market.createMarketBatch(
+            99, 1, types, targets, block.timestamp + 1 hours
+        );
+
+        assertEq(ids.length, 3);
+        assertEq(ids[0], 2); // marketId starts at 1, setUp already created 1
+        assertEq(ids[1], 3);
+        assertEq(ids[2], 4);
+
+        uint256[] memory gameMarkets = market.getGameMarkets(99);
+        assertEq(gameMarkets.length, 3);
+    }
+
+    function test_CreateMarketBatch_Unauthorized_Reverts() public {
+        PredictionMarket.MarketType[] memory types = new PredictionMarket.MarketType[](1);
+        types[0] = PredictionMarket.MarketType.WillWin;
+        uint256[] memory targets = new uint256[](1);
+        targets[0] = 0;
+
+        vm.prank(alice);
+        vm.expectRevert(PredictionMarket.Unauthorized.selector);
+        market.createMarketBatch(99, 1, types, targets, block.timestamp + 1 hours);
+    }
+
     function test_PlaceBet_Yes() public {
         vm.deal(alice, 1 ether);
         vm.prank(alice);
