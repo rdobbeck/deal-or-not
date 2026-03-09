@@ -10,13 +10,13 @@ export const CHAIN_CONTRACTS = {
     bestOfBanker: "0x55100EF4168d21631EEa6f2b73D6303Bb008F554" as `0x${string}`,
     bridge: "0xb233efd1623f843151c97a1fb32f9115aae6a875" as `0x${string}`,
     priceFeed: "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1" as `0x${string}`,
-    // Agent infra — shared with prototype (already deployed + verified on Sourcify)
-    agentRegistry: "0xf3B0d29416d3504c802bab4A799349746A37E788" as `0x${string}`,
-    dealOrNotAgents: "0x12e23ff7954c62ae18959c5fd4aed6b51ebcd627" as `0x${string}`,
-    agentStaking: "0xd46eba96e29e83952ec0ef74eed3c7eb1a4ba6b4" as `0x${string}`,
-    seasonalLeaderboard: "0x13c3c750ed19c935567dcb54ee4e88ff6789001a" as `0x${string}`,
+    // Agent infra (convergence deployment)
+    agentRegistry: "0x2eDE9C65F4Ff33F4190aee798478bb579f248F52" as `0x${string}`,
+    dealOrNotAgents: "0xa04cF1072A33B3FF4aB6bb1E054e69e66BaD5430" as `0x${string}`,
+    agentStaking: "0xaFb6D74eD5286158312163671E93fba8A6Fd058e" as `0x${string}`,
+    seasonalLeaderboard: "0x2C91eF4616f7D4386F27C237D77169395e9EfCE0" as `0x${string}`,
     predictionMarket: "0x1B995CC591Ec168df03339Fae74B0752Aa1259d8" as `0x${string}`,
-    sharedPriceFeed: "0x91d8104e6e138607c00dd0bc132e1291a641c36d" as `0x${string}`,
+    sharedPriceFeed: "0x9AB27e309E677c0ec488E37E8F3B193958D2bBc7" as `0x${string}`,
   },
   [sepolia.id]: {
     gateway: "0x366215e1f493f3420abd5551c0618c2b28cbc18a" as `0x${string}`,
