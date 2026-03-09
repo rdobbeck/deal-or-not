@@ -14,7 +14,7 @@ const MockDataContext = createContext<MockDataContextType>({
 
 export function MockDataProvider({ children }: { children: ReactNode }) {
   const [useMockData, setUseMockData] = useState(
-    process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "false"
+    process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true"
   );
 
   return (

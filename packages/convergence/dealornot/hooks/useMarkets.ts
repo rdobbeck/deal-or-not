@@ -120,7 +120,7 @@ export function useMarketCount() {
   const { data, isLoading } = useReadContract({
     ...marketConfig,
     functionName: "nextMarketId",
-    query: { enabled: !useMockData },
+    query: { enabled: !useMockData, refetchInterval: 5000 },
   });
 
   if (useMockData) return { count: MOCK_MARKETS.length, isLoading: false };
@@ -147,7 +147,7 @@ export function useAllMarkets() {
 
   const { data, isLoading } = useReadContracts({
     contracts,
-    query: { enabled: !useMockData && contracts.length > 0 },
+    query: { enabled: !useMockData && contracts.length > 0, refetchInterval: 5000 },
   });
 
   const markets: MarketData[] = useMemo(() => {
@@ -198,15 +198,15 @@ export function useMarket(marketId: number | undefined) {
 
   const { data: mData, isLoading: l1 } = useReadContract({
     ...marketConfig, functionName: "markets", args,
-    query: { enabled },
+    query: { enabled, refetchInterval: 5000 },
   });
   const { data: statsData, isLoading: l2 } = useReadContract({
     ...marketConfig, functionName: "getMarketStats", args,
-    query: { enabled },
+    query: { enabled, refetchInterval: 5000 },
   });
   const { data: oddsData, isLoading: l3 } = useReadContract({
     ...marketConfig, functionName: "getMarketOdds", args,
-    query: { enabled },
+    query: { enabled, refetchInterval: 5000 },
   });
 
   const market: MarketData | null = useMemo(() => {
