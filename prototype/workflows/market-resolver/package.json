@@ -1,0 +1,17 @@
+{
+  "name": "market-resolver-workflow",
+  "version": "1.0.0",
+  "description": "CRE workflow to auto-resolve prediction markets when games complete",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@chainlink/cre-sdk": "^1.1.1",
+    "viem": "^2.34.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
