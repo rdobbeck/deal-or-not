@@ -9,6 +9,7 @@ const WAIT_VIDEOS = [
   "/videos/clip-4.mp4",
   "/videos/clip-5.mp4",
   "/videos/clip-6.mp4",
+  "/videos/intro/INTRO_funny_useit.mp4",
 ];
 
 interface VideoWaitProps {

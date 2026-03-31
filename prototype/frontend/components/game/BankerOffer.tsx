@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { centsToUsd, formatWei, dealQualityPercent, qualityColor, qualityLabel } from "@/lib/utils";
+import { BANKER_CALL_VIDEOS, getRandomVideo } from "@/lib/videos";
 
 interface BankerOfferProps {
   offerCents: bigint;
@@ -24,9 +26,39 @@ export default function BankerOffer({
   bankerMessage,
 }: BankerOfferProps) {
   const quality = dealQualityPercent(offerCents, remainingValues);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [showVideo, setShowVideo] = useState(true);
+
+  // Select random banker call video on mount
+  useEffect(() => {
+    const video = getRandomVideo(BANKER_CALL_VIDEOS);
+    setVideoUrl(video);
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
+      {/* Banker Call Video */}
+      {showVideo && videoUrl && (
+        <div className="absolute inset-0 z-60 flex items-center justify-center bg-black">
+          <video
+            key={videoUrl}
+            autoPlay
+            muted={false}
+            playsInline
+            onEnded={() => setShowVideo(false)}
+            className="max-w-full max-h-full"
+          >
+            <source src={videoUrl} type="video/mp4" />
+          </video>
+          <button
+            onClick={() => setShowVideo(false)}
+            className="absolute top-4 right-4 text-white/60 hover:text-white text-sm bg-black/50 px-4 py-2 rounded"
+          >
+            Skip Video
+          </button>
+        </div>
+      )}
+
       <div className="bg-gray-900 border-2 border-amber-500 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl shadow-amber-500/20">
         <h2 className="text-amber-400 text-center text-sm uppercase tracking-[0.2em] mb-4">
           The Banker is Calling...
